@@ -26,6 +26,7 @@ public class MyAi implements Ai {
 
 	private Integer getScore(Board.GameState state, Move move){
 		return null;
+
 	}
 
 	private Integer ScoreLocation(/*mrX's location, detectives' location*/){
