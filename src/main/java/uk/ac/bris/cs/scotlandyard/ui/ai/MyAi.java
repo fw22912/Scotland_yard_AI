@@ -1,9 +1,10 @@
 package uk.ac.bris.cs.scotlandyard.ui.ai;
 
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nonnull;
 
@@ -24,15 +25,35 @@ public class MyAi implements Ai {
 		return moves.get(new Random().nextInt(moves.size()));
 	}
 
-	private Integer getScore(Board.GameState state, Move move){
-		return null;
 
+	//returns a list of detectives' piece
+	@Nonnull private List<Piece> getDetectives(Board board){
+		List<Piece> allDetectives = new ArrayList<>();
+		var allPlayers = board.getPlayers();
+		for(Piece piece : allPlayers){
+			if(piece.isDetective()){
+				allDetectives.add(piece);
+			}
+		}
+		System.out.println(allDetectives);
+		return allDetectives;
 	}
 
-	private Integer ScoreLocation(/*mrX's location, detectives' location*/){
-		return null;
+	//returns a list of detectives' location
+	private List<Integer> detectiveLocation(Board board, List<Piece> detectives){
+		List<Integer> allLocation = new ArrayList<>();
+		for(Piece piece : detectives){
+			var location = board.getDetectiveLocation((Piece.Detective) piece).get();
+			allLocation.add(location);
+		}
+		return allLocation;
 	}
 
 
+
+	private Integer getScore(Board.GameState state, Board board, List<Integer> detectiveLocation, Move move){
+
+		return null;
+	}
 
 }
