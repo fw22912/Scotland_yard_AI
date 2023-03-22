@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.atlassian.fugue.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -26,8 +27,9 @@ public class MyAi implements Ai {
 		var moves = board.getAvailableMoves().asList();
 		var detectiveList = getDetectives(board);
 		var locations = detectiveLocation(board, detectiveList);
-		var detectiveMoves = getDetectiveMoves(board, allPlayers);
 
+		Board.GameState currentState = (Board.GameState) board;
+		Set<Board.GameState> nextState = nextGameState(currentState, board);
 
 		return moves.get(new Random().nextInt(moves.size()));
 	}
@@ -76,17 +78,28 @@ public class MyAi implements Ai {
 		return allLocation;
 	}
 
+	private Set<Board.GameState> nextGameState(Board.GameState state, Board board){
+		Set<Move> mrXMoves = new HashSet<>(board.getAvailableMoves());
+		Set<Board.GameState> updatedStates = new HashSet<>();
+		for(Move eachMove : mrXMoves){
+			updatedStates.add(state.advance(eachMove));
+		}
+		System.out.println("updated states: " + updatedStates);
+		return updatedStates;
+	}
+
+
 	//get available moves for detectives
-	private Set<Move> getDetectiveMoves(Board board, ImmutableSet<Piece> players){
-		Set<Move> detectiveMoves = new HashSet<>();
-		if(!getDetectives(board).isEmpty()){detectiveMoves.addAll(board.getAvailableMoves());}
-//		for(Piece piece : board.getPlayers()){
-//			if(!piece.isMrX()){
-//				detectiveMoves.addAll(board.getAvailableMoves());
-//			}
-//		}
-		System.out.println("getDetectiveMoves: " + detectiveMoves);
-		return detectiveMoves;
+	private Set<Move> getDetectiveMoves(Board.GameState state, Board board, ImmutableSet<Piece> players){
+		Set<Board.GameState> possibleState = new HashSet<>();
+		Set<Move> mrXMoves = new HashSet<>(board.getAvailableMoves());
+		for(Move currentMove : mrXMoves){
+			possibleState.add(state.advance(currentMove));
+		}
+		for(Board.GameState state1 : possibleState){
+
+		}
+		return null;
 	}
 
 	//assign score to each location
@@ -94,7 +107,6 @@ public class MyAi implements Ai {
 	//should use Dijkstra as well
 
 	private Integer getScore(Board.GameState state, Board board, Set<Integer> detectiveLocation, Set<Integer> mrXLocation, Set<Move> detectiveMoves){
-
 		return null;
 	}
 }
