@@ -107,15 +107,25 @@ public class MyAi implements Ai {
 //			return scores from a given board
 		}
 		if(checkMrX){
-			double maxEval = Double.NEGATIVE_INFINITY;
+			int maxEval = (int)Double.NEGATIVE_INFINITY;
 			for(Move move : board.getAvailableMoves()){
 				Board newBoard = updatedBoard(board, move);
 				int eval = miniMax(newBoard, depth - 1, alpha, beta, false);
-				maxEval = ma
-
+				//can I compare double and integer!!!!
+				maxEval = Math.max(maxEval, eval);
+				return maxEval;
 			}
 		}
-		return null;
+		else{
+			int minEval = (int)Double.POSITIVE_INFINITY;
+			for(Move move : board.getAvailableMoves()){
+				Board newBoard = updatedBoard(board, move);
+				int eval = miniMax(newBoard, depth - 1, alpha, beta, true);
+				minEval = Math.min(minEval, eval);
+				return minEval;
+			}
+		}
+		return 0;
 	}
 
 	//assign score to each location
