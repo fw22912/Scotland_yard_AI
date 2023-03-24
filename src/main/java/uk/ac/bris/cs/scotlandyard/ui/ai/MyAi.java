@@ -17,7 +17,7 @@ import uk.ac.bris.cs.scotlandyard.model.*;
 
 public class MyAi implements Ai {
 
-	@Nonnull @Override public String name() { return "SIGMA"; }
+	@Nonnull @Override public String name() { return "PLZ"; }
 
 	@Nonnull @Override public Move pickMove(
 			@Nonnull Board board,
@@ -25,12 +25,7 @@ public class MyAi implements Ai {
 		// returns a random move, replace with your own implementation
 		ImmutableSet<Piece> allPlayers = board.getPlayers();
 		var moves = board.getAvailableMoves().asList();
-		var detectiveList = getDetectives(board);
-		var locations = detectiveLocation(board, detectiveList);
-
-		Board.GameState currentState = (Board.GameState) board;
-		Set<Board.GameState> nextState = nextGameState(currentState, board);
-
+		var currentState = (Board.GameState) board;
 		return moves.get(new Random().nextInt(moves.size()));
 	}
 
@@ -46,6 +41,16 @@ public class MyAi implements Ai {
 		}
 		System.out.println("Get detectives: " +  allDetectives);
 		return allDetectives;
+	}
+
+	//returning a new game state with one move ahead
+	private Board updatedBoard(Board board, Move move){
+		return ((Board.GameState) board).advance(move);
+	}
+
+	//get Scores
+	private Integer makeScore(Board board){
+		return null;
 	}
 
 	//returns mrX's location
@@ -78,26 +83,37 @@ public class MyAi implements Ai {
 		return allLocation;
 	}
 
-	private Set<Board.GameState> nextGameState(Board.GameState state, Board board){
-		Set<Move> mrXMoves = new HashSet<>(board.getAvailableMoves());
-		Set<Board.GameState> updatedStates = new HashSet<>();
-		for(Move eachMove : mrXMoves){
-			updatedStates.add(state.advance(eachMove));
+	//get available moves for detectives
+	private Set<Move> getDetectiveMoves(Board board, ImmutableSet<Piece> players){
+		Set<Move> detectiveMoves = new HashSet<>();
+		Set<Move> allMoves = board.getAvailableMoves();
+		for (Move move : allMoves) {
+			if (move.commencedBy() != Piece.MrX.MRX) {detectiveMoves.add(move);}
 		}
-		System.out.println("updated states: " + updatedStates);
-		return updatedStates;
+		System.out.println("getDetectiveMoves: " + detectiveMoves);
+		return detectiveMoves;
 	}
 
+	//check whether the player is mrX or not
+	private Boolean PlayerIsMrX(Piece piece){
+		if(piece.isMrX()) return true;
+		else return false;
+	}
 
-	//get available moves for detectives
-	private Set<Move> getDetectiveMoves(Board.GameState state, Board board, ImmutableSet<Piece> players){
-		Set<Board.GameState> possibleState = new HashSet<>();
-		Set<Move> mrXMoves = new HashSet<>(board.getAvailableMoves());
-		for(Move currentMove : mrXMoves){
-			possibleState.add(state.advance(currentMove));
+	//MiniMax
+	private Integer miniMax(Board board, int depth, int alpha, int beta, Boolean checkMrX){
+		if(depth == 0 || !board.getWinner().isEmpty()){
+//			getScore()
+//			return scores from a given board
 		}
-		for(Board.GameState state1 : possibleState){
+		if(checkMrX){
+			double maxEval = Double.NEGATIVE_INFINITY;
+			for(Move move : board.getAvailableMoves()){
+				Board newBoard = updatedBoard(board, move);
+				int eval = miniMax(newBoard, depth - 1, alpha, beta, false);
+				maxEval = ma
 
+			}
 		}
 		return null;
 	}
@@ -107,6 +123,7 @@ public class MyAi implements Ai {
 	//should use Dijkstra as well
 
 	private Integer getScore(Board.GameState state, Board board, Set<Integer> detectiveLocation, Set<Integer> mrXLocation, Set<Move> detectiveMoves){
+
 		return null;
 	}
 }
