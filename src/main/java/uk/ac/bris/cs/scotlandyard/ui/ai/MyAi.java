@@ -113,8 +113,9 @@ public class MyAi implements Ai {
 				int eval = miniMax(newBoard, depth - 1, alpha, beta, false);
 				//can I compare double and integer!!!!
 				maxEval = Math.max(maxEval, eval);
-				return maxEval;
+				if(beta <= alpha) break;
 			}
+			return maxEval;
 		}
 		else{
 			int minEval = (int)Double.POSITIVE_INFINITY;
@@ -122,12 +123,24 @@ public class MyAi implements Ai {
 				Board newBoard = updatedBoard(board, move);
 				int eval = miniMax(newBoard, depth - 1, alpha, beta, true);
 				minEval = Math.min(minEval, eval);
-				return minEval;
+				if(beta >= alpha) break;
 			}
+			return minEval;
 		}
-		return 0;
 	}
 
+	//apply miniMax
+	private Move bestMove(Board board){
+		//setting maxVal, max, min values
+		int maxVal = (int)Double.NEGATIVE_INFINITY;
+		int max = (int)Double.NEGATIVE_INFINITY;
+		int min = (int)Double.POSITIVE_INFINITY;
+
+		for(Move move : board.getAvailableMoves()){
+
+		}
+		return null;
+	}
 	//assign score to each location
 	//should I use miniMax here?
 	//should use Dijkstra as well
