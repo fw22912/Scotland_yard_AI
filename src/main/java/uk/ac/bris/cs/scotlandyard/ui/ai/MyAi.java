@@ -11,8 +11,11 @@ import javax.annotation.Nonnull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.graph.EndpointPair;
+import com.google.common.graph.ImmutableValueGraph;
 import io.atlassian.fugue.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.w3c.dom.Node;
 import uk.ac.bris.cs.scotlandyard.model.*;
 
 public class MyAi implements Ai {
@@ -29,69 +32,9 @@ public class MyAi implements Ai {
 		return moves.get(new Random().nextInt(moves.size()));
 	}
 
-
-	//returns a list of detectives' piece
-	@Nonnull private List<Piece> getDetectives(Board board){
-		List<Piece> allDetectives = new ArrayList<>();
-		var allPlayers = board.getPlayers();
-		for(Piece piece : allPlayers){
-			if(piece.isDetective()){
-				allDetectives.add(piece);
-			}
-		}
-		System.out.println("Get detectives: " +  allDetectives);
-		return allDetectives;
-	}
-
 	//returning a new game state with one move ahead
 	private Board updatedBoard(Board board, Move move){
 		return ((Board.GameState) board).advance(move);
-	}
-
-	//get Scores
-	private Integer makeScore(Board board){
-		return null;
-	}
-
-	//returns mrX's location
-	private Set<Integer> getMrXLocation(Board board, List<Piece> players){
-		Set<Integer> mrXLocation = new HashSet<>();
-		for(Piece piece : players){
-			if(piece.isMrX()){
-				Set<Move> getMrXMoves = board.getAvailableMoves();
-				for(Move move : getMrXMoves){
-					mrXLocation.add(move.source());
-					break;
-				}
-			}
-		}
-		System.out.println("getMrXLocation: " + mrXLocation);
-		return mrXLocation;
-	}
-
-
-	//returns a list of detectives' location
-	private Set<Integer> detectiveLocation(Board board, List<Piece> players){
-		Set<Integer> allLocation = new HashSet<>();
-		for(Piece piece : players){
-			if(piece.isDetective()){
-				var location = board.getDetectiveLocation((Piece.Detective) piece).get();
-				allLocation.add(location);
-			}
-		}
-		System.out.println("detectiveLocation: " + allLocation);
-		return allLocation;
-	}
-
-	//get available moves for detectives
-	private Set<Move> getDetectiveMoves(Board board, ImmutableSet<Piece> players){
-		Set<Move> detectiveMoves = new HashSet<>();
-		Set<Move> allMoves = board.getAvailableMoves();
-		for (Move move : allMoves) {
-			if (move.commencedBy() != Piece.MrX.MRX) {detectiveMoves.add(move);}
-		}
-		System.out.println("getDetectiveMoves: " + detectiveMoves);
-		return detectiveMoves;
 	}
 
 	//check whether the player is mrX or not
@@ -130,23 +73,119 @@ public class MyAi implements Ai {
 	}
 
 	//apply miniMax
-	private Move bestMove(Board board){
-		//setting maxVal, max, min values
-		int maxVal = (int)Double.NEGATIVE_INFINITY;
-		int max = (int)Double.NEGATIVE_INFINITY;
-		int min = (int)Double.POSITIVE_INFINITY;
-
-		for(Move move : board.getAvailableMoves()){
-
-		}
-		return null;
-	}
 	//assign score to each location
 	//should I use miniMax here?
 	//should use Dijkstra as well
+	private Move bestMove(Board board, int depth){
+			//setting maxVal, max, min values
+		int maxVal = (int)Double.NEGATIVE_INFINITY;
+		int alpha = (int)Double.NEGATIVE_INFINITY;
+		int beta = (int)Double.POSITIVE_INFINITY;
 
-	private Integer getScore(Board.GameState state, Board board, Set<Integer> detectiveLocation, Set<Integer> mrXLocation, Set<Move> detectiveMoves){
-
+		for(Move move : board.getAvailableMoves()){
+			Board newBoard = updatedBoard(board, move);
+			int eval = miniMax(newBoard, depth - 1, alpha, beta, false);
+		}
 		return null;
 	}
+
+	//helper method that returns a list of detectives' pieces
+	private Set<Piece> getDetectives(List<Piece> allPlayers){
+		Set<Piece> allDetectives = new HashSet<>();
+		for(Piece piece : allPlayers){
+			if(piece.isDetective()){
+				allDetectives.add(piece);
+			}
+		}
+		return allDetectives;
+	}
+
+	//helper method that returns mrX's piece
+	private Set<Piece> getMrX(List<Piece> allPlayers){
+		Set<Piece> thisMrX = new HashSet<>();
+		for(Piece piece : allPlayers){
+			if(piece.isMrX()){
+				thisMrX.add(piece);
+			}
+		}
+		return thisMrX;
+	}
+
+
+
+	//helper method for getting player's location
+	public static Integer updateLocation(Move move){
+		return move.accept(new Move.Visitor<>() {
+			List<Integer> newDestination = new ArrayList<>();
+			@Override
+			public Integer visit(Move.SingleMove move) {
+				return move.destination;
+			}
+			@Override
+			public Integer visit(Move.DoubleMove move) {
+				return move.destination2;
+			}
+		});
+	}
+
+
+
+	static List<Integer> shortestPathFromSourcesToDestination(
+			ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph,
+			List<Integer> sources,
+			Integer destination,
+			Board board) {
+
+		Map<Integer, Integer> distance = new HashMap<>();
+		List<Integer> shortestRoute = new ArrayList<>();
+		int score , count= 0;
+		//Fill every distance with maximum value
+		graph.nodes().forEach(node -> distance.put(node, Integer.MAX_VALUE));
+		graph.nodes().forEach(node -> shortestRoute.add(node, null));
+
+		//add the source on distance
+		sources.forEach(source -> distance.put(source, 0));
+
+		//
+		PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
+		sources.forEach(source -> queue.add(source));
+
+		List<Integer> possibleNodes = new ArrayList<>();
+		for(Move move : board.getAvailableMoves()){
+			possibleNodes.add(updateLocation(move));
+		}
+
+		//
+
+//		int current =
+//		for(Integer possible : possibleNodes){
+//			int possibleDestination = possible;
+//			if (!distance.containsKey(possibleDestination)) {
+//				distance.put(possibleDestination, getTransportCost(possibleDestination, current, graph))
+//			}
+//		}
+	return null;
+	}
+
+	private static int edgeToDistance(EndpointPair<Integer> edge) {
+//		ImmutableSet<ScotlandYard.Transport> transports = edge.value().get();
+//		return transports.stream().mapToInt(ScotlandYard.Transport::getTransportCost).sum();
+		return 0;
+	}
+
+	private static Integer getTransportCost(Integer destination,Integer source,ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
+		int ticketVal = 0;
+		for(ScotlandYard.Transport t : graph.edgeValueOrDefault(source, destination, ImmutableSet.of())){
+			switch (t.requiredTicket()){
+				case TAXI -> ticketVal += 1;
+				case BUS -> ticketVal += 2;
+				case UNDERGROUND -> ticketVal += 3;
+				case SECRET -> ticketVal += 4;
+			}
+		}
+		return ticketVal;
+	}
+
+
+
 }
