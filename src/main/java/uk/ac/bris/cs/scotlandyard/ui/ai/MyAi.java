@@ -34,14 +34,10 @@ public class MyAi implements Ai {
 	public Move pickMove(
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
-		Move finalMove = mrXBestMove(graph, board, 3);
-		return finalMove;
+		Board.GameState gameState = (Board.GameState) board;
+		return mrXBestMove(gameState.getSetup().graph, board, 3);
 	}
 
-
-	private Move bestMove(Board board, Player player, int depth) {
-		return null;
-	}
 
 	private Board updatedBoard(Board board, Move move) {
 		return ((Board.GameState) board).advance(move);
@@ -49,10 +45,7 @@ public class MyAi implements Ai {
 
 	//MiniMax
 	private Integer miniMax(Board board, int depth, int alpha, int beta, Boolean checkMrX) {
-		if (depth == 0 || !board.getWinner().isEmpty()) {
-//         getScore()
-//         return scores from a given board
-		}
+		if (depth == 0 || !board.getWinner().isEmpty()) {return 0;}
 		if (checkMrX) {
 			int maxEval = (int) Double.NEGATIVE_INFINITY;
 			for (Move move : board.getAvailableMoves()) {
@@ -64,7 +57,8 @@ public class MyAi implements Ai {
 				if (beta <= alpha) break;
 			}
 			return maxEval;
-		} else {
+		}
+		else {
 			int minEval = (int) Double.POSITIVE_INFINITY;
 			for (Move move : board.getAvailableMoves()) {
 				Board newBoard = updatedBoard(board, move);
@@ -85,7 +79,6 @@ public class MyAi implements Ai {
 		List<Move> bestMoves = new ArrayList<>();
 
 		for (Move move : board.getAvailableMoves()) {
-			Board updated = updatedBoard(board, move);
 			int eval = miniMax(board, depth - 1, alpha, beta, false);
 			if (maxEval < eval) {
 				maxEval = eval;
@@ -100,17 +93,41 @@ public class MyAi implements Ai {
 		int score = 0;
 
 		for (Move move : bestMoves) {
-			int thisScore = calculateDistance(board, move, graph);
-			if(thisScore > score){
-				finalMove = move;
+			for (Integer adjacentNode : graph.adjacentNodes(updateLocation(move))) {
+				if (!returnAdjacent(board).add(adjacentNode)) {
+					int thisScore = calculateDistance(board, move, graph);
+					if(thisScore > score){
+						finalMove = move;
+					}
+				}
+				else miniMax(board, depth, (int)Double.NEGATIVE_INFINITY, (int)Double.POSITIVE_INFINITY, false);
+			}
+		}
+		if (finalMove == null) {
+			List<Move> availableMoves = ImmutableList.copyOf(board.getAvailableMoves());
+			if (!availableMoves.isEmpty()) {
+				finalMove = availableMoves.get(new Random().nextInt(availableMoves.size()));
 			}
 		}
 		return finalMove;
 	}
 
+	//a helper method that returns adjacent nodes of current detectives' locations
+	private Set<Integer> returnAdjacent(Board board){
+		Set<Integer> allMoves = new HashSet<>();
+		for (Piece piece : board.getPlayers()) {
+			if (!piece.isMrX()) {
+				for(Move move : board.getAvailableMoves()){
+					allMoves.add(updateLocation(move));
+				}
+			}
+		}
+		return allMoves;
+	}
+
 	//a helper method that gathers all detectives' locations
-	private static List<Integer> returnLocation(Board board) {
-		List<Integer> locations = new ArrayList<>();
+	private static Set<Integer> returnLocation(Board board) {
+		Set<Integer> locations = new HashSet<>();
 		for (Piece piece : board.getPlayers()) {
 			if (!piece.isMrX()) {
 				locations.add(board.getDetectiveLocation((Piece.Detective) piece).get());
@@ -154,7 +171,7 @@ public class MyAi implements Ai {
 
 
 	//Weighting transportation tickets
-	private Integer transportationCost(Board board, ScotlandYard.Ticket ticket) {
+	private Integer transportationCost(ScotlandYard.Ticket ticket) {
 		int ticketVal = 0;
 		switch (ticket) {
 			case BUS -> ticketVal += 2;
@@ -170,7 +187,7 @@ public class MyAi implements Ai {
 	private Integer calculateDistance(Board board,
 									  Move move,
 									  ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-		List<Integer> detectiveLocation = returnLocation(board);
+		Set<Integer> detectiveLocation = returnLocation(board);
 		int totalVal = 0;
 
 		//calculating the distance from every detective's location
@@ -204,7 +221,7 @@ public class MyAi implements Ai {
 					int ticketVal = 0;
 					//Calculating the ticket value
 					for(ScotlandYard.Ticket ticket : updateTicket(move)){
-						ticketVal += transportationCost(board, ticket);
+						ticketVal += transportationCost(ticket);
 					}
 
 					//add up the ticket value to newDistance
