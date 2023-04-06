@@ -35,9 +35,9 @@ public class MyAi implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		return mrXBestMove(gameState.getSetup().graph, board, 3);
+		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 3);
+		return finalMove;
 	}
-
 
 	private Board updatedBoard(Board board, Move move) {
 		return ((Board.GameState) board).advance(move);
@@ -45,7 +45,12 @@ public class MyAi implements Ai {
 
 	//MiniMax
 	private Integer miniMax(Board board, int depth, int alpha, int beta, Boolean checkMrX) {
-		if (depth == 0 || !board.getWinner().isEmpty()) {return 0;}
+		Board.GameState gameState = (Board.GameState) board;
+		if (depth == 0 || !board.getWinner().isEmpty()) {
+//			calculateDistance(board, move, gameState.getSetup().graph);
+			return 0;
+//			mrXBestMove(gameState.getSetup().graph, board, depth)
+		}
 		if (checkMrX) {
 			int maxEval = (int) Double.NEGATIVE_INFINITY;
 			for (Move move : board.getAvailableMoves()) {
@@ -57,8 +62,7 @@ public class MyAi implements Ai {
 				if (beta <= alpha) break;
 			}
 			return maxEval;
-		}
-		else {
+		} else {
 			int minEval = (int) Double.POSITIVE_INFINITY;
 			for (Move move : board.getAvailableMoves()) {
 				Board newBoard = updatedBoard(board, move);
@@ -79,6 +83,7 @@ public class MyAi implements Ai {
 		List<Move> bestMoves = new ArrayList<>();
 
 		for (Move move : board.getAvailableMoves()) {
+			Board updated = updatedBoard(board, move);
 			int eval = miniMax(board, depth - 1, alpha, beta, false);
 			if (maxEval < eval) {
 				maxEval = eval;
@@ -93,41 +98,17 @@ public class MyAi implements Ai {
 		int score = 0;
 
 		for (Move move : bestMoves) {
-			for (Integer adjacentNode : graph.adjacentNodes(updateLocation(move))) {
-				if (!returnAdjacent(board).add(adjacentNode)) {
-					int thisScore = calculateDistance(board, move, graph);
-					if(thisScore > score){
-						finalMove = move;
-					}
-				}
-				else miniMax(board, depth, (int)Double.NEGATIVE_INFINITY, (int)Double.POSITIVE_INFINITY, false);
-			}
-		}
-		if (finalMove == null) {
-			List<Move> availableMoves = ImmutableList.copyOf(board.getAvailableMoves());
-			if (!availableMoves.isEmpty()) {
-				finalMove = availableMoves.get(new Random().nextInt(availableMoves.size()));
+			int thisScore = calculateDistance(board, move, graph);
+			if(thisScore > score){
+				finalMove = move;
 			}
 		}
 		return finalMove;
 	}
 
-	//a helper method that returns adjacent nodes of current detectives' locations
-	private Set<Integer> returnAdjacent(Board board){
-		Set<Integer> allMoves = new HashSet<>();
-		for (Piece piece : board.getPlayers()) {
-			if (!piece.isMrX()) {
-				for(Move move : board.getAvailableMoves()){
-					allMoves.add(updateLocation(move));
-				}
-			}
-		}
-		return allMoves;
-	}
-
 	//a helper method that gathers all detectives' locations
-	private static Set<Integer> returnLocation(Board board) {
-		Set<Integer> locations = new HashSet<>();
+	private static List<Integer> returnLocation(Board board) {
+		List<Integer> locations = new ArrayList<>();
 		for (Piece piece : board.getPlayers()) {
 			if (!piece.isMrX()) {
 				locations.add(board.getDetectiveLocation((Piece.Detective) piece).get());
@@ -171,7 +152,7 @@ public class MyAi implements Ai {
 
 
 	//Weighting transportation tickets
-	private Integer transportationCost(ScotlandYard.Ticket ticket) {
+	private Integer transportationCost(Board board, ScotlandYard.Ticket ticket) {
 		int ticketVal = 0;
 		switch (ticket) {
 			case BUS -> ticketVal += 2;
@@ -187,7 +168,7 @@ public class MyAi implements Ai {
 	private Integer calculateDistance(Board board,
 									  Move move,
 									  ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-		Set<Integer> detectiveLocation = returnLocation(board);
+		List<Integer> detectiveLocation = returnLocation(board);
 		int totalVal = 0;
 
 		//calculating the distance from every detective's location
@@ -215,17 +196,20 @@ public class MyAi implements Ai {
 			while (!queue.isEmpty()) {
 				Integer currentNode = queue.poll();
 				if (currentNode.equals(destination)) break;
+
 				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
 					Integer neighbour = edge.adjacentNode(currentNode);
 					// Calculate new distance
 					int ticketVal = 0;
+
 					//Calculating the ticket value
 					for(ScotlandYard.Ticket ticket : updateTicket(move)){
-						ticketVal += transportationCost(ticket);
+						ticketVal += transportationCost(board, ticket);
 					}
 
 					//add up the ticket value to newDistance
 					int newDistance = distance.get(currentNode) + ticketVal;
+
 					//update the shortest path to mrX's location
 					if (newDistance < distance.get(neighbour)) {
 						// Update distance and previous node
