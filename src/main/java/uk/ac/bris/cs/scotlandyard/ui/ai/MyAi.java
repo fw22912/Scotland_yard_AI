@@ -34,13 +34,9 @@ public class MyAi implements Ai {
 	public Move pickMove(
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
-		Move finalMove = mrXBestMove(graph, board, 3);
+		Board.GameState gameState = (Board.GameState) board;
+		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 3);
 		return finalMove;
-	}
-
-
-	private Move bestMove(Board board, Player player, int depth) {
-		return null;
 	}
 
 	private Board updatedBoard(Board board, Move move) {
@@ -49,9 +45,11 @@ public class MyAi implements Ai {
 
 	//MiniMax
 	private Integer miniMax(Board board, int depth, int alpha, int beta, Boolean checkMrX) {
+		Board.GameState gameState = (Board.GameState) board;
 		if (depth == 0 || !board.getWinner().isEmpty()) {
-//         getScore()
-//         return scores from a given board
+//			calculateDistance(board, move, gameState.getSetup().graph);
+			return 0;
+//			mrXBestMove(gameState.getSetup().graph, board, depth)
 		}
 		if (checkMrX) {
 			int maxEval = (int) Double.NEGATIVE_INFINITY;
@@ -198,10 +196,12 @@ public class MyAi implements Ai {
 			while (!queue.isEmpty()) {
 				Integer currentNode = queue.poll();
 				if (currentNode.equals(destination)) break;
+
 				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
 					Integer neighbour = edge.adjacentNode(currentNode);
 					// Calculate new distance
 					int ticketVal = 0;
+
 					//Calculating the ticket value
 					for(ScotlandYard.Ticket ticket : updateTicket(move)){
 						ticketVal += transportationCost(board, ticket);
@@ -209,6 +209,7 @@ public class MyAi implements Ai {
 
 					//add up the ticket value to newDistance
 					int newDistance = distance.get(currentNode) + ticketVal;
+
 					//update the shortest path to mrX's location
 					if (newDistance < distance.get(neighbour)) {
 						// Update distance and previous node
