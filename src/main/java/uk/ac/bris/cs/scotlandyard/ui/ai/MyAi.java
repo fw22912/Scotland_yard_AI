@@ -70,6 +70,7 @@ public class MyAi implements Ai {
 		}
 	}
 
+	//chooses the best move for MrX
 	private Move mrXBestMove(Board board, int depth){
 		int maxEval = (int)Double.NEGATIVE_INFINITY;
 		int alpha = (int)Double.NEGATIVE_INFINITY;
@@ -91,6 +92,7 @@ public class MyAi implements Ai {
 		return null;
 	}
 
+	//a helper method that gathers all detectives' locations
 	private static List<Integer> returnLocation(Board board){
 		List<Integer> locations = new ArrayList<>();
 		for(Piece piece : board.getPlayers()){
