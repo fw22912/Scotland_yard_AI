@@ -74,8 +74,6 @@ public class MyAi implements Ai {
 
 	//apply miniMax
 	//assign score to each location
-	//should I use miniMax here?
-	//should use Dijkstra as well
 	private Move bestMove(Board board, int depth){
 			//setting maxVal, max, min values
 		int maxVal = (int)Double.NEGATIVE_INFINITY;
@@ -88,6 +86,7 @@ public class MyAi implements Ai {
 		}
 		return null;
 	}
+
 
 	//helper method that returns a list of detectives' pieces
 	private Set<Piece> getDetectives(List<Piece> allPlayers){
@@ -112,7 +111,6 @@ public class MyAi implements Ai {
 	}
 
 
-
 	//helper method for getting player's location
 	public static Integer updateLocation(Move move){
 		return move.accept(new Move.Visitor<>() {
@@ -128,9 +126,21 @@ public class MyAi implements Ai {
 		});
 	}
 
+	private static Integer getTransportCost(Integer destination,Integer source,ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
+		int ticketVal = 0;
+		for(ScotlandYard.Transport t : graph.edgeValueOrDefault(source, destination, ImmutableSet.of())){
+			switch (t.requiredTicket()){
+				case TAXI -> ticketVal += 1;
+				case BUS -> ticketVal += 2;
+				case UNDERGROUND -> ticketVal += 3;
+				case SECRET -> ticketVal += 4;
+			}
+		}
+		return ticketVal;
+	}
 
 
-	static List<Integer> shortestPathFromSourcesToDestination(
+	static List<Integer> score(
 			ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph,
 			List<Integer> sources,
 			Integer destination,
@@ -154,8 +164,23 @@ public class MyAi implements Ai {
 		for(Move move : board.getAvailableMoves()){
 			possibleNodes.add(updateLocation(move));
 		}
+		//Running Dijkstra's algorithm
+		Integer current = 0;
 
-		//
+		while(distance.size() > current){
+			Integer allNodes = queue.poll();
+			//finding the shortest path to mrX
+			for(Integer movedLocation : possibleNodes){
+				if(!distance.containsKey(movedLocation)){
+					Integer value = distance.get(current) + getTransportCost(destination, sources.get(current),graph);
+					distance.put(destination, value);
+				}
+				else{
+
+				}
+			}
+			count++;
+		}
 
 //		int current =
 //		for(Integer possible : possibleNodes){
@@ -171,19 +196,6 @@ public class MyAi implements Ai {
 //		ImmutableSet<ScotlandYard.Transport> transports = edge.value().get();
 //		return transports.stream().mapToInt(ScotlandYard.Transport::getTransportCost).sum();
 		return 0;
-	}
-
-	private static Integer getTransportCost(Integer destination,Integer source,ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
-		int ticketVal = 0;
-		for(ScotlandYard.Transport t : graph.edgeValueOrDefault(source, destination, ImmutableSet.of())){
-			switch (t.requiredTicket()){
-				case TAXI -> ticketVal += 1;
-				case BUS -> ticketVal += 2;
-				case UNDERGROUND -> ticketVal += 3;
-				case SECRET -> ticketVal += 4;
-			}
-		}
-		return ticketVal;
 	}
 
 
