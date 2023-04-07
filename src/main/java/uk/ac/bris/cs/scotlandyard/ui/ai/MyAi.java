@@ -83,6 +83,7 @@ public class MyAi implements Ai {
 		List<Move> bestMoves = new ArrayList<>();
 
 		for (Move move : board.getAvailableMoves()) {
+			Board updated = updatedBoard(board, move);
 			int eval = miniMax(board, depth - 1, alpha, beta, false);
 			if (maxEval < eval) {
 				maxEval = eval;
@@ -97,35 +98,12 @@ public class MyAi implements Ai {
 		int score = 0;
 
 		for (Move move : bestMoves) {
-			for (Integer adjacentNode : graph.adjacentNodes(updateLocation(move))) {
-				if (!returnAdjacent(board).add(adjacentNode)) {
-					int thisScore = calculateDistance(board, move, graph);
-					if(thisScore > score){
-						finalMove = move;
-					}
-				}
-				else miniMax(board, depth, (int)Double.NEGATIVE_INFINITY, (int)Double.POSITIVE_INFINITY, false);
-			}
-		}
-		if (finalMove == null) {
-			List<Move> availableMoves = ImmutableList.copyOf(board.getAvailableMoves());
-			if (!availableMoves.isEmpty()) {
-				finalMove = availableMoves.get(new Random().nextInt(availableMoves.size()));
+			int thisScore = calculateDistance(board, move, graph);
+			if(thisScore > score){
+				finalMove = move;
 			}
 		}
 		return finalMove;
-	}
-
-	private Set<Integer> returnAdjacent(Board board) {
-		Set<Integer> occupied = new HashSet<>();
-		for (Piece piece : board.getPlayers()) {
-			if (!piece.isMrX()) {
-				for (Move move : board.getAvailableMoves()) {
-					occupied.add(updateLocation(move));
-				}
-			}
-		}
-		return occupied;
 	}
 
 	//a helper method that gathers all detectives' locations
