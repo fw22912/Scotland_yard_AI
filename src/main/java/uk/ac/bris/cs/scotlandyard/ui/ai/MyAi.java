@@ -36,35 +36,34 @@ public class MyAi implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 3);
-		return finalMove;
+		return mrXBestMove(gameState.getSetup().graph, board, 3);
 	}
 
+	//updating the board status
 	private Board updatedBoard(Board board, Move move) {
 		return ((Board.GameState) board).advance(move);
 	}
 
-	//MiniMax
+	//MiniMax method(alpha beta pruning)
 	private Integer miniMax(Board board, int depth, int alpha, int beta, Boolean checkMrX) {
 		Board.GameState gameState = (Board.GameState) board;
-		if (depth == 0 || !board.getWinner().isEmpty()) {
-//			calculateDistance(board, move, gameState.getSetup().graph);
-//			mrXBestMove(gameState.getSetup().graph, board, depth)
-
-			return (int)Double.NEGATIVE_INFINITY;
-		}
+		//when the game is over
+		if (depth == 0 || !board.getWinner().isEmpty()) {return (int)Double.NEGATIVE_INFINITY;}
+		//if the player is mrX(maximising player)
 		if (checkMrX) {
 			int maxEval = (int) Double.NEGATIVE_INFINITY;
+			//iterate through all the moves and choose the maximum value
 			for (Move move : board.getAvailableMoves()) {
 				Board newBoard = updatedBoard(board, move);
 				int eval = miniMax(newBoard, depth - 1, alpha, beta, false);
-				//can I compare double and integer!!!!
 				maxEval = Math.max(maxEval, eval);
 				alpha = Math.max(alpha, eval);
+				//
 				if (beta <= alpha) break;
 			}
 			return maxEval;
 		}
+		//if the players are detectives choose the minimum value
 		else {
 			int minEval = (int) Double.POSITIVE_INFINITY;
 			for (Move move : board.getAvailableMoves()) {
@@ -78,13 +77,13 @@ public class MyAi implements Ai {
 		}
 	}
 
-	//chooses the best move for MrX
+	//a method that choose the best move based on the score
 	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		int maxEval = (int) Double.NEGATIVE_INFINITY;
 		int alpha = (int) Double.NEGATIVE_INFINITY;
 		int beta = (int) Double.POSITIVE_INFINITY;
 		List<Move> bestMoves = new ArrayList<>();
-
+		//iterate through all possible moves and
 		for (Move move : board.getAvailableMoves()) {
 			Board updated = updatedBoard(board, move);
 			int eval = miniMax(board, depth - 1, alpha, beta, false);
@@ -109,9 +108,6 @@ public class MyAi implements Ai {
 				possible.clear();
 				score = thisScore;
 				possible.add(move);
-				System.out.println("================================================================");
-				System.out.println("score: "+ thisScore);
-				System.out.println("move: " + move);
 			}
 			else if(thisScore == score){
 				possible.add(move);
@@ -211,7 +207,7 @@ public class MyAi implements Ai {
 			case BUS -> ticketVal += 4;
 			case UNDERGROUND -> ticketVal += 7;
 			case DOUBLE -> ticketVal -= 6;
-//			case SECRET -> ticketVal -= 6;
+			case SECRET -> ticketVal -= 6;
 		}
 		return ticketVal;
 	}
