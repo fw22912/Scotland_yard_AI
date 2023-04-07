@@ -36,34 +36,35 @@ public class MyAi implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		return mrXBestMove(gameState.getSetup().graph, board, 3);
+		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 3);
+		return finalMove;
 	}
 
-	//updating the board status
 	private Board updatedBoard(Board board, Move move) {
 		return ((Board.GameState) board).advance(move);
 	}
 
-	//MiniMax method(alpha beta pruning)
+	//MiniMax
 	private Integer miniMax(Board board, int depth, int alpha, int beta, Boolean checkMrX) {
 		Board.GameState gameState = (Board.GameState) board;
-		//when the game is over
-		if (depth == 0 || !board.getWinner().isEmpty()) {return (int)Double.NEGATIVE_INFINITY;}
-		//if the player is mrX(maximising player)
+		if (depth == 0 || !board.getWinner().isEmpty()) {
+//			calculateDistance(board, move, gameState.getSetup().graph);
+//			mrXBestMove(gameState.getSetup().graph, board, depth)
+
+			return (int)Double.NEGATIVE_INFINITY;
+		}
 		if (checkMrX) {
 			int maxEval = (int) Double.NEGATIVE_INFINITY;
-			//iterate through all the moves and choose the maximum value
 			for (Move move : board.getAvailableMoves()) {
 				Board newBoard = updatedBoard(board, move);
 				int eval = miniMax(newBoard, depth - 1, alpha, beta, false);
+				//can I compare double and integer!!!!
 				maxEval = Math.max(maxEval, eval);
 				alpha = Math.max(alpha, eval);
-				//
 				if (beta <= alpha) break;
 			}
 			return maxEval;
 		}
-		//if the players are detectives choose the minimum value
 		else {
 			int minEval = (int) Double.POSITIVE_INFINITY;
 			for (Move move : board.getAvailableMoves()) {
@@ -77,13 +78,13 @@ public class MyAi implements Ai {
 		}
 	}
 
-	//a method that choose the best move based on the score
+	//chooses the best move for MrX
 	private List<Move> scoreToMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		int maxEval = (int) Double.NEGATIVE_INFINITY;
 		int alpha = (int) Double.NEGATIVE_INFINITY;
 		int beta = (int) Double.POSITIVE_INFINITY;
 		List<Move> bestMoves = new ArrayList<>();
-		//iterate through all possible moves and
+
 		for (Move move : board.getAvailableMoves()) {
 			Board updated = updatedBoard(board, move);
 			int eval = miniMax(board, depth - 1, alpha, beta, false);
@@ -95,10 +96,10 @@ public class MyAi implements Ai {
 				bestMoves.add(move);
 			}
 		}
-		return bestMoves;
-	}
+			return bestMoves;
+		}
 
-		private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
+	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		Move finalMove = null;
 		int score = 0;
 		List<Move> bestMoves = scoreToMoves(graph, board, depth);
@@ -112,6 +113,9 @@ public class MyAi implements Ai {
 				possible.clear();
 				score = thisScore;
 				possible.add(move);
+				System.out.println("================================================================");
+				System.out.println("score: "+ thisScore);
+				System.out.println("move: " + move);
 			}
 			else if(thisScore == score){
 				possible.add(move);
@@ -132,18 +136,71 @@ public class MyAi implements Ai {
 		return finalMove;
 	}
 
+//	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
+//		int maxEval = (int) Double.NEGATIVE_INFINITY;
+//		int alpha = (int) Double.NEGATIVE_INFINITY;
+//		int beta = (int) Double.POSITIVE_INFINITY;
+//		List<Move> bestMoves = new ArrayList<>();
+//
+//		for (Move move : board.getAvailableMoves()) {
+//			Board updated = updatedBoard(board, move);
+//			int eval = miniMax(board, depth - 1, alpha, beta, false);
+//			if (maxEval < eval) {
+//				maxEval = eval;
+//				bestMoves.clear();
+//				bestMoves.add(move);
+//			} else if (maxEval == eval) {
+//				bestMoves.add(move);
+//			}
+//		}
+//
+//		Move finalMove = null;
+//		int score = 0;
+//
+//		List<Move> finalMoves = checkAdjacent(board, bestMoves);
+//		List<Move> possible = new ArrayList<>();
+//
+//		for (Move move : finalMoves) {
+//			int thisScore = calculateDistance(board, move, graph);
+//			if(thisScore > score){
+//				possible.clear();
+//				score = thisScore;
+//				possible.add(move);
+//				System.out.println("================================================================");
+//				System.out.println("score: "+ thisScore);
+//				System.out.println("move: " + move);
+//			}
+//			else if(thisScore == score){
+//				possible.add(move);
+//			}
+//		}
+//
+//		if(possible.size() > 1){
+//			Random ran = new Random();
+//			int randomIndex = ran.nextInt(possible.size());
+//			finalMove = possible.get(randomIndex);
+//		}
+//		else if(possible.isEmpty()){
+//			Random ran = new Random();
+//			int randomIndex = ran.nextInt(bestMoves.size());
+//			finalMove = bestMoves.get(randomIndex);
+//		}
+//		else finalMove = possible.get(0);
+//		return finalMove;
+//	}
+
 	//a function that checks whether this move is safe or not
 	private List<Move> checkAdjacent(Board board, List<Move> bestMoves){
-			Board.GameState gameState = (Board.GameState) board;
-			Set<Integer> occupation = detectiveAdjacent(board, gameState.getSetup().graph);
-			List<Move> finalMoves = new ArrayList<>();
-			for (Move move : bestMoves) {
-				Integer currentNode = updateLocation(move);
-				//if there are no detectives around add the move to the list
-				if (occupation.add(updateLocation(move))) {
-					finalMoves.add(move);
-				}
+		Board.GameState gameState = (Board.GameState) board;
+		Set<Integer> occupation = detectiveAdjacent(board, gameState.getSetup().graph);
+		List<Move> finalMoves = new ArrayList<>();
+		for(Move move : bestMoves){
+			Integer currentNode = updateLocation(move);
+			//if there are no detectives around add the move to the list
+			if(occupation.add(updateLocation(move))){
+				finalMoves.add(move);
 			}
+		}
 		return finalMoves;
 	}
 
@@ -211,7 +268,7 @@ public class MyAi implements Ai {
 			case BUS -> ticketVal += 4;
 			case UNDERGROUND -> ticketVal += 7;
 			case DOUBLE -> ticketVal -= 6;
-			case SECRET -> ticketVal -= 6;
+//			case SECRET -> ticketVal -= 6;
 		}
 		return ticketVal;
 	}
