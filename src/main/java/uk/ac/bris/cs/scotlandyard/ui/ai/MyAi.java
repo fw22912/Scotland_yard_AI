@@ -48,7 +48,7 @@ public class MyAi implements Ai {
 		Board.GameState gameState = (Board.GameState) board;
 		if (depth == 0 || !board.getWinner().isEmpty()) {
 //			calculateDistance(board, move, gameState.getSetup().graph);
-			return 0;
+			return (int)Double.NEGATIVE_INFINITY;
 //			mrXBestMove(gameState.getSetup().graph, board, depth)
 		}
 		if (checkMrX) {
