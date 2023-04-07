@@ -78,7 +78,7 @@ public class MyAi implements Ai {
 	}
 
 	//a method that choose the best move based on the score
-	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
+	private List<Move> scoreToMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		int maxEval = (int) Double.NEGATIVE_INFINITY;
 		int alpha = (int) Double.NEGATIVE_INFINITY;
 		int beta = (int) Double.POSITIVE_INFINITY;
@@ -95,9 +95,13 @@ public class MyAi implements Ai {
 				bestMoves.add(move);
 			}
 		}
+		return bestMoves;
+	}
 
+		private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		Move finalMove = null;
 		int score = 0;
+		List<Move> bestMoves = scoreToMoves(graph, board, depth);
 
 		List<Move> finalMoves = checkAdjacent(board, bestMoves);
 		List<Move> possible = new ArrayList<>();
@@ -130,16 +134,16 @@ public class MyAi implements Ai {
 
 	//a function that checks whether this move is safe or not
 	private List<Move> checkAdjacent(Board board, List<Move> bestMoves){
-		Board.GameState gameState = (Board.GameState) board;
-		Set<Integer> occupation = detectiveAdjacent(board, gameState.getSetup().graph);
-		List<Move> finalMoves = new ArrayList<>();
-		for(Move move : bestMoves){
-			Integer currentNode = updateLocation(move);
-			//if there are no detectives around add the move to the list
-			if(occupation.add(updateLocation(move))){
-				finalMoves.add(move);
+			Board.GameState gameState = (Board.GameState) board;
+			Set<Integer> occupation = detectiveAdjacent(board, gameState.getSetup().graph);
+			List<Move> finalMoves = new ArrayList<>();
+			for (Move move : bestMoves) {
+				Integer currentNode = updateLocation(move);
+				//if there are no detectives around add the move to the list
+				if (occupation.add(updateLocation(move))) {
+					finalMoves.add(move);
+				}
 			}
-		}
 		return finalMoves;
 	}
 
