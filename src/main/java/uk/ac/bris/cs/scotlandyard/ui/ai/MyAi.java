@@ -19,6 +19,7 @@ import io.atlassian.fugue.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.units.qual.A;
 import org.w3c.dom.Node;
+import uk.ac.bris.cs.scotlandyard.event.GameOver;
 import uk.ac.bris.cs.scotlandyard.model.*;
 
 public class MyAi implements Ai {
@@ -48,8 +49,9 @@ public class MyAi implements Ai {
 		Board.GameState gameState = (Board.GameState) board;
 		if (depth == 0 || !board.getWinner().isEmpty()) {
 //			calculateDistance(board, move, gameState.getSetup().graph);
-			return (int)Double.NEGATIVE_INFINITY;
 //			mrXBestMove(gameState.getSetup().graph, board, depth)
+
+			return (int)Double.NEGATIVE_INFINITY;
 		}
 		if (checkMrX) {
 			int maxEval = (int) Double.NEGATIVE_INFINITY;
@@ -62,7 +64,8 @@ public class MyAi implements Ai {
 				if (beta <= alpha) break;
 			}
 			return maxEval;
-		} else {
+		}
+		else {
 			int minEval = (int) Double.POSITIVE_INFINITY;
 			for (Move move : board.getAvailableMoves()) {
 				Board newBoard = updatedBoard(board, move);
@@ -97,14 +100,63 @@ public class MyAi implements Ai {
 		Move finalMove = null;
 		int score = 0;
 
-		for (Move move : bestMoves) {
+		List<Move> finalMoves = checkAdjacent(board, bestMoves);
+		List<Move> possible = new ArrayList<>();
+
+		for (Move move : finalMoves) {
 			int thisScore = calculateDistance(board, move, graph);
 			if(thisScore > score){
-				finalMove = move;
+				possible.clear();
+				score = thisScore;
+				possible.add(move);
+				System.out.println("================================================================");
+				System.out.println("score: "+ thisScore);
+				System.out.println("move: " + move);
+			}
+			else if(thisScore == score){
+				possible.add(move);
 			}
 		}
+
+		if(possible.size() > 1){
+			Random ran = new Random();
+			int randomIndex = ran.nextInt(possible.size());
+			finalMove = possible.get(randomIndex);
+		}
+		else if(possible.isEmpty()){
+			Random ran = new Random();
+			int randomIndex = ran.nextInt(bestMoves.size());
+			finalMove = bestMoves.get(randomIndex);
+		}
+		else finalMove = possible.get(0);
 		return finalMove;
 	}
+
+	//a function that checks whether this move is safe or not
+	private List<Move> checkAdjacent(Board board, List<Move> bestMoves){
+		Board.GameState gameState = (Board.GameState) board;
+		Set<Integer> occupation = detectiveAdjacent(board, gameState.getSetup().graph);
+		List<Move> finalMoves = new ArrayList<>();
+		for(Move move : bestMoves){
+			Integer currentNode = updateLocation(move);
+			//if there are no detectives around add the move to the list
+			if(occupation.add(updateLocation(move))){
+				finalMoves.add(move);
+			}
+		}
+		return finalMoves;
+	}
+
+	//a method that returns all adjacent nodes from detectives' current location
+	private Set<Integer> detectiveAdjacent(Board board, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
+		List<Integer> currentLocation = returnLocation(board);
+		Set<Integer> possibleLocation = new HashSet<>();
+		for(Integer node : currentLocation){
+			possibleLocation.addAll(graph.adjacentNodes(node));
+		}
+		return possibleLocation;
+	}
+
 
 	//a helper method that gathers all detectives' locations
 	private static List<Integer> returnLocation(Board board) {
@@ -155,12 +207,18 @@ public class MyAi implements Ai {
 	private Integer transportationCost(Board board, ScotlandYard.Ticket ticket) {
 		int ticketVal = 0;
 		switch (ticket) {
-			case BUS -> ticketVal += 2;
-			case TAXI -> ticketVal += 4;
-			case UNDERGROUND -> ticketVal += 6;
-			case SECRET -> ticketVal += 12;
+			case TAXI -> ticketVal += 1;
+			case BUS -> ticketVal += 4;
+			case UNDERGROUND -> ticketVal += 7;
+			case DOUBLE -> ticketVal -= 6;
+//			case SECRET -> ticketVal -= 6;
 		}
 		return ticketVal;
+	}
+
+	private List<Move> checkAdjacent(List<Move> bestMoves){
+
+		return null;
 	}
 
 	//Scoring method, uses Dijkstra's algorithm
