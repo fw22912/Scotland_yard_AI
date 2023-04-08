@@ -79,7 +79,6 @@ public class MyAi implements Ai {
 
 	//chooses the best move for MrX
 	private List<Move> scoreToMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
-		System.out.println(graph.adjacentNodes(1));
 		int maxEval = (int) Double.NEGATIVE_INFINITY;
 		int alpha = (int) Double.NEGATIVE_INFINITY;
 		int beta = (int) Double.POSITIVE_INFINITY;
@@ -106,7 +105,9 @@ public class MyAi implements Ai {
 		Move finalMove;
 		int score = 0;
 		List<Move> bestMoves = scoreToMoves(graph, board, depth);
+		System.out.println("bestMoves: " + bestMoves);
 		List<Move> possible = checkAdjacent(board, bestMoves);
+		System.out.println("possible: " + possible);
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
 		for (Move move : possible) {
@@ -120,12 +121,13 @@ public class MyAi implements Ai {
 				finalMoves.add(move);
 			}
 		}
+		System.out.println("finalMoves: " + finalMoves);
 		Random ran = new Random();
 		//If there are more than possible moves, randomly choose among those moves
 		if(finalMoves.size() > 1){
 			// TODO : 파이널무브즈 수 하나 이상일 때 겟어베일러블무브 수 비교해서 가장 높은 걸로
 			for(Move move : finalMoves) {
-				int thisScore = numberOfAvailableMoves(graph, move);
+				int thisScore = graph.adjacentNodes(updateLocation(move)).size();
 				if (thisScore > score){
 					finalMoves.clear();
 					score = thisScore;
@@ -140,12 +142,13 @@ public class MyAi implements Ai {
 			finalMove = bestMoves.get(randomIndex);
 		}
 		else finalMove = finalMoves.get(0);
+		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
-	private Integer numberOfAvailableMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Move move) {
-		return graph.incidentEdges(updateLocation(move)).size();
-	}
+//	private Integer numberOfAvailableMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Move move) {
+//		return graph.incidentEdges(updateLocation(move)).size();
+//	}
 
 	//a function that checks whether this move is safe or not
 	//it returns a list of the nodes that are not adjacent to detectives' locations
