@@ -76,6 +76,7 @@ public class MyAi implements Ai {
 		}
 	}
 
+
 	//chooses the best move for MrX
 	private List<Move> scoreToMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		int maxEval = (int) Double.NEGATIVE_INFINITY;
@@ -98,12 +99,12 @@ public class MyAi implements Ai {
 			return bestMoves;
 		}
 
+
 		//return the best move
 	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		Move finalMove = null;
 		int score = 0;
 		List<Move> bestMoves = scoreToMoves(graph, board, depth);
-		System.out.println("bestMoves: " + bestMoves);
 		List<Move> possible = checkAdjacent(board, bestMoves);
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
@@ -118,7 +119,6 @@ public class MyAi implements Ai {
 				finalMoves.add(move);
 			}
 		}
-		System.out.println("possible: " + possible);
 		Random ran = new Random();
 		//If there are more than possible moves, randomly choose among those moves
 		if(finalMoves.size() > 1){
@@ -130,7 +130,6 @@ public class MyAi implements Ai {
 			finalMove = bestMoves.get(randomIndex);
 		}
 		else finalMove = finalMoves.get(0);
-		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
@@ -138,30 +137,27 @@ public class MyAi implements Ai {
 	//it returns a list of the nodes that are not adjacent to detectives' locations
 	private List<Move> checkAdjacent(Board board, List<Move> bestMoves){
 		Board.GameState gameState = (Board.GameState) board;
-		List<Move> finalMoves = new ArrayList<>();
+		List<Move> possible = new ArrayList<>();
 		for(Move move : bestMoves){
-			Board newBoard = updatedBoard(board, move);
-			Set<Integer> occupation = detectiveAdjacent(newBoard, gameState.getSetup().graph);
+			Set<Integer> occupation = detectiveAdjacent(move, board, gameState.getSetup().graph);
 			//if there are no detectives around add the move to the list
 			if(occupation.add(updateLocation(move))){
-				finalMoves.add(move);
+				possible.add(move);
 			}
 		}
-		return finalMoves;
+		return possible;
 	}
 
 
 	//a method that returns all adjacent nodes from detectives' current location
-	private Set<Integer> detectiveAdjacent(Board board, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
-		List<Integer> currentLocation = returnLocation(board);
-		Set<Integer> possibleLocation = new HashSet<>();
-//		for(Integer node : currentLocation){
-//			possibleLocation.addAll(graph.adjacentNodes(node));
-//		}
-		for(Move move : board.getAvailableMoves()){
-			possibleLocation.add(updateLocation(move));
+	private Set<Integer> detectiveAdjacent(Move move, Board board, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
+		Board newBoard = updatedBoard(board, move);
+		Set<Integer> availableLocation = new HashSet<>();
+		//places where detectives can go
+		for(Move move2 : newBoard.getAvailableMoves()){
+			availableLocation.add(updateLocation(move2));
 		}
-		return possibleLocation;
+		return availableLocation;
 	}
 
 
