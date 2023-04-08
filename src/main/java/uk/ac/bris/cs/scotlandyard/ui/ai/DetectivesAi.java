@@ -36,6 +36,11 @@ public class DetectivesAi implements Ai {
         return null;
     }
 
+    private Board updatedBoard(Board board, Move move){
+        return ((Board.GameState) board).advance(move);
+    }
+
+    //MiniMax
 
 
 }
