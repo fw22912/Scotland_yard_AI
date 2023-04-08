@@ -76,8 +76,10 @@ public class MyAi implements Ai {
 		}
 	}
 
+
 	//chooses the best move for MrX
 	private List<Move> scoreToMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
+		System.out.println(graph.adjacentNodes(1));
 		int maxEval = (int) Double.NEGATIVE_INFINITY;
 		int alpha = (int) Double.NEGATIVE_INFINITY;
 		int beta = (int) Double.POSITIVE_INFINITY;
@@ -95,23 +97,20 @@ public class MyAi implements Ai {
 				bestMoves.add(move);
 			}
 		}
-			return bestMoves;
-		}
+		return bestMoves;
+	}
 
-		//return the best move
+
+	//return the best move
 	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
-		Move finalMove = null;
+		Move finalMove;
 		int score = 0;
 		List<Move> bestMoves = scoreToMoves(graph, board, depth);
-		System.out.println("bestMoves: " + bestMoves);
 		List<Move> possible = checkAdjacent(board, bestMoves);
-		System.out.println("possible: " + possible);
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
 		for (Move move : possible) {
 			int thisScore = calculateDistance(board, move, graph);
-			System.out.println("Move: " + move + "   score: " + thisScore);
-			System.out.println("=========NEW MOVE NEW SCORE========");
 			if(thisScore > score){
 				finalMoves.clear();
 				score = thisScore;
@@ -121,11 +120,18 @@ public class MyAi implements Ai {
 				finalMoves.add(move);
 			}
 		}
-		System.out.println("finalMoves: " + finalMoves);
 		Random ran = new Random();
 		//If there are more than possible moves, randomly choose among those moves
 		if(finalMoves.size() > 1){
-//			not random should make sth (ex. distance from detectives)
+			// TODO : 파이널무브즈 수 하나 이상일 때 겟어베일러블무브 수 비교해서 가장 높은 걸로
+			for(Move move : finalMoves) {
+				int thisScore = numberOfAvailableMoves(graph, move);
+				if (thisScore > score){
+					finalMoves.clear();
+					score = thisScore;
+					finalMoves.add(move);
+				}
+			}
 			int randomIndex = ran.nextInt(finalMoves.size());
 			finalMove = possible.get(randomIndex);
 		}
@@ -134,8 +140,11 @@ public class MyAi implements Ai {
 			finalMove = bestMoves.get(randomIndex);
 		}
 		else finalMove = finalMoves.get(0);
-		System.out.println("finalMove: " + finalMove);
 		return finalMove;
+	}
+
+	private Integer numberOfAvailableMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Move move) {
+		return graph.incidentEdges(updateLocation(move)).size();
 	}
 
 	//a function that checks whether this move is safe or not
@@ -144,8 +153,7 @@ public class MyAi implements Ai {
 		Board.GameState gameState = (Board.GameState) board;
 		List<Move> possible = new ArrayList<>();
 		for(Move move : bestMoves){
-			Board newBoard = updatedBoard(board, move);
-			Set<Integer> occupation = detectiveAdjacent(newBoard, gameState.getSetup().graph);
+			Set<Integer> occupation = detectiveAdjacent(move, board, gameState.getSetup().graph);
 			//if there are no detectives around add the move to the list
 			if(occupation.add(updateLocation(move))){
 				possible.add(move);
@@ -156,21 +164,19 @@ public class MyAi implements Ai {
 
 
 	//a method that returns all adjacent nodes from detectives' current location
-	private Set<Integer> detectiveAdjacent(Board board, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
-		List<Integer> currentLocation = returnLocation(board);
+	private Set<Integer> detectiveAdjacent(Move move, Board board, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
+		Board newBoard = updatedBoard(board, move);
 		Set<Integer> availableLocation = new HashSet<>();
-//		for(Integer node : currentLocation){
-//			possibleLocation.addAll(graph.adjacentNodes(node));
-//		}
-		for(Move move : board.getAvailableMoves()){
-			availableLocation.add(updateLocation(move));
+		//places where detectives can go
+		for(Move move2 : newBoard.getAvailableMoves()){
+			availableLocation.add(updateLocation(move2));
 		}
 		return availableLocation;
 	}
 
 
 	//a helper method that gathers all detectives' locations
-	private static List<Integer> returnLocation(Board board) {
+	private static List<Integer> getDetectivesLocation(Board board) {
 		List<Integer> locations = new ArrayList<>();
 		for (Piece piece : board.getPlayers()) {
 			if (!piece.isMrX()) {
@@ -216,17 +222,20 @@ public class MyAi implements Ai {
 
 
 	//Weighting transportation tickets
-//	private Integer transportationCost(Board board, ScotlandYard.Ticket ticket) {
-//		int ticketVal = 0;
-//		switch (ticket) {
-//			case TAXI -> ticketVal += 0;
-//			case BUS -> ticketVal += 0;
-//			case UNDERGROUND -> ticketVal += 0;
-////			case DOUBLE -> ticketVal -= 6;
-//			case SECRET -> ticketVal += 0;
-//		}
-//		return ticketVal;
-//	}
+	private Integer transportationCost(Board board, List<ScotlandYard.Ticket> tickets) {
+		int ticketVal = 0;
+		for(ScotlandYard.Ticket ticket : tickets){
+			switch (ticket) {
+				case TAXI -> ticketVal += 1;
+				case BUS -> ticketVal += 2;
+				case UNDERGROUND -> ticketVal += 3;
+//			case DOUBLE -> ticketVal -= 6;
+				case SECRET -> ticketVal += 4;
+			}
+		}
+		return ticketVal;
+	}
+
 
 
 	//Scoring method, uses Dijkstra's algorithm
@@ -234,11 +243,11 @@ public class MyAi implements Ai {
 	private Integer calculateDistance(Board board,
 									  Move move,
 									  ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-		List<Integer> detectiveLocation = returnLocation(board);
+		List<Integer> detectivesLocation = getDetectivesLocation(board);
 		int totalVal = 0;
 
 		//calculating the distance from every detective's location
-		for (Integer location : detectiveLocation) {
+		for (Integer detectiveLocation : detectivesLocation) {
 			// Instantiate distance
 			Map<Integer, Integer> distance = new HashMap<>();
 			// Instantiate preNode
@@ -250,28 +259,25 @@ public class MyAi implements Ai {
 				distance.put(node, Integer.MAX_VALUE);
 				preNode.put(node, null);
 			}
-			distance.put(location, 0);
+			distance.put(detectiveLocation, 0);
 			// Create priority queue and add source node with distance 0
 			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
-			queue.add(location);
+			queue.add(detectiveLocation);
 
 			// Setting the destination
-			int destination = updateLocation(move);
+			int mrXLocation = updateLocation(move);
 
 			// Run Dijkstra's Algorithm
 			while (!queue.isEmpty()) {
 				Integer currentNode = queue.poll();
-				if (currentNode.equals(destination)) break;
+
+				if (currentNode.equals(mrXLocation)) break;
 
 				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
 					Integer neighbour = edge.adjacentNode(currentNode);
 					// Calculate new distance
 					int ticketVal = 0;
-
-					//Calculating the ticket value
-//					for(ScotlandYard.Ticket ticket : updateTicket(move)){
-//						ticketVal += transportationCost(board, ticket);
-//					}
+					ticketVal += transportationCost(board, updateTicket(move));
 
 					//add up the ticket value to newDistance
 					int newDistance = distance.get(currentNode) + ticketVal;
@@ -287,7 +293,6 @@ public class MyAi implements Ai {
 				}
 			}
 			totalVal += distance.get(updateLocation(move));
-			System.out.println("totalValue: " + totalVal);
 		}
 		return totalVal;
 	}
