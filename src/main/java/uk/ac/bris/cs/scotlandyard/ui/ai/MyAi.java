@@ -58,7 +58,7 @@ public class MyAi implements Ai {
 				int eval = miniMax(newBoard, depth - 1, alpha, beta, false);
 				//can I compare double and integer!!!!
 				maxEval = Math.max(maxEval, eval);
-				alpha = Math.max(alpha, eval);
+				alpha = Math.max(alpha, maxEval);
 				if (beta <= alpha) break;
 			}
 			return maxEval;
@@ -69,7 +69,7 @@ public class MyAi implements Ai {
 				Board newBoard = updatedBoard(board, move);
 				int eval = miniMax(newBoard, depth - 1, alpha, beta, true);
 				minEval = Math.min(minEval, eval);
-				beta = Math.min(beta, eval);
+				beta = Math.min(beta, minEval);
 				if (beta <= alpha) break;
 			}
 			return minEval;
@@ -103,31 +103,31 @@ public class MyAi implements Ai {
 		Move finalMove = null;
 		int score = 0;
 		List<Move> bestMoves = scoreToMoves(graph, board, depth);
-		List<Move> finalMoves = checkAdjacent(board, bestMoves);
-		List<Move> possible = new ArrayList<>();
+		List<Move> possible = checkAdjacent(board, bestMoves);
+		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
-		for (Move move : finalMoves) {
+		for (Move move : possible) {
 			int thisScore = calculateDistance(board, move, graph);
 			if(thisScore > score){
-				possible.clear();
+				finalMoves.clear();
 				score = thisScore;
-				possible.add(move);
+				finalMoves.add(move);
 			}
 			else if(thisScore == score){
-				possible.add(move);
+				finalMoves.add(move);
 			}
 		}
 		Random ran = new Random();
 		//If there are more than possible moves, randomly choose among those moves
-		if(possible.size() > 1){
-			int randomIndex = ran.nextInt(possible.size());
+		if(finalMoves.size() > 1){
+			int randomIndex = ran.nextInt(finalMoves.size());
 			finalMove = possible.get(randomIndex);
 		}
-		else if(possible.isEmpty()){
+		else if(finalMoves.isEmpty()){
 			int randomIndex = ran.nextInt(bestMoves.size());
 			finalMove = bestMoves.get(randomIndex);
 		}
-		else finalMove = possible.get(0);
+		else finalMove = finalMoves.get(0);
 		return finalMove;
 	}
 
