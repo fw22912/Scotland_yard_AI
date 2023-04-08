@@ -78,7 +78,7 @@ public class MyAi implements Ai {
 
 
 	//chooses the best move for MrX
-	private List<Move> scoreToMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
+	private List<Move> scoreToMoves(Board board, int depth) {
 		int maxEval = (int) Double.NEGATIVE_INFINITY;
 		int alpha = (int) Double.NEGATIVE_INFINITY;
 		int beta = (int) Double.POSITIVE_INFINITY;
@@ -104,52 +104,52 @@ public class MyAi implements Ai {
 	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		Move finalMove;
 		int score = 0;
-		List<Move> bestMoves = scoreToMoves(graph, board, depth);
+		List<Move> firstMoves = scoreToMoves(board, depth);
 		System.out.println("===================NEW LOOP====================");
-		System.out.println("bestMoves: " + bestMoves);
-		List<Move> possible = checkAdjacent(board, bestMoves);
-		System.out.println("possible: " + possible);
-		List<Move> finalMoves = new ArrayList<>();
+		System.out.println("firstMoves: " + firstMoves);
+		List<Move> noAdjacent = checkAdjacent(board, firstMoves);
+		System.out.println("noAdjacent: " + noAdjacent);
+		List<Move> highestScore = new ArrayList<>();
 		//iterate through
-		for (Move move : possible) {
+		for (Move move : noAdjacent) {
 			int thisScore = calculateDistance(board, move, graph);
 			if(thisScore > score){
-				finalMoves.clear();
+				highestScore.clear();
 				score = thisScore;
-				finalMoves.add(move);
+				highestScore.add(move);
 			}
 			else if(thisScore == score){
-				finalMoves.add(move);
+				highestScore.add(move);
 			}
 		}
-		System.out.println("finalMoves: " + finalMoves);
+		System.out.println("thirdMoves: " + highestScore);
 		Random ran = new Random();
 		int score2 = 0;
-		List<Move> bestFinalMove = new ArrayList<>();
+		List<Move> finalMoves = new ArrayList<>();
 		//If there are more than possible moves, randomly choose among those moves
-		if(possible.isEmpty()){
-			int randomIndex = ran.nextInt(bestMoves.size());
-			finalMove = bestMoves.get(randomIndex);
+		if(noAdjacent.isEmpty()){
+			int randomIndex = ran.nextInt(firstMoves.size());
+			finalMove = firstMoves.get(randomIndex);
 		}
-		else if(finalMoves.size() > 1){
+		else if(highestScore.size() > 1){
 			// TODO : 파이널무브즈 수 하나 이상일 때 겟어베일러블무브 수 비교해서 가장 높은 걸로
-			for(Move move : finalMoves) {
+			for(Move move : highestScore) {
 				int thisScore2 = graph.adjacentNodes(updateLocation(move)).size();
 				if (thisScore2 > score2){
 					score2 = thisScore2;
-					bestFinalMove.clear();
-					bestFinalMove.add(move);
+					finalMoves.clear();
+					finalMoves.add(move);
 				}
 				else if(thisScore2 == score2){
-					bestFinalMove.add(move);
+					finalMoves.add(move);
 				}
 			}
-			System.out.println("bestFinalMove: " + bestFinalMove);
+			System.out.println("finalMoves: " + finalMoves);
 			int randomIndex = ran.nextInt(finalMoves.size());
-			finalMove = bestFinalMove.get(randomIndex);
+			finalMove = finalMoves.get(randomIndex);
 		}
 
-		else finalMove = finalMoves.get(0);
+		else finalMove = highestScore.get(0);
 		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
