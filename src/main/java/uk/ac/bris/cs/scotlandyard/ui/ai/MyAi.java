@@ -103,6 +103,7 @@ public class MyAi implements Ai {
 		Move finalMove = null;
 		int score = 0;
 		List<Move> bestMoves = scoreToMoves(graph, board, depth);
+		System.out.println("bestMoves: " + bestMoves);
 		List<Move> possible = checkAdjacent(board, bestMoves);
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
@@ -117,6 +118,7 @@ public class MyAi implements Ai {
 				finalMoves.add(move);
 			}
 		}
+		System.out.println("possible: " + possible);
 		Random ran = new Random();
 		//If there are more than possible moves, randomly choose among those moves
 		if(finalMoves.size() > 1){
@@ -128,6 +130,7 @@ public class MyAi implements Ai {
 			finalMove = bestMoves.get(randomIndex);
 		}
 		else finalMove = finalMoves.get(0);
+		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
