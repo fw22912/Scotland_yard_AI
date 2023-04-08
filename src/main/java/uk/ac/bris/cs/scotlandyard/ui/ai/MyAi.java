@@ -105,6 +105,7 @@ public class MyAi implements Ai {
 		Move finalMove;
 		int score = 0;
 		List<Move> bestMoves = scoreToMoves(graph, board, depth);
+		System.out.println("===================NEW LOOP====================");
 		System.out.println("bestMoves: " + bestMoves);
 		List<Move> possible = checkAdjacent(board, bestMoves);
 		System.out.println("possible: " + possible);
@@ -123,24 +124,31 @@ public class MyAi implements Ai {
 		}
 		System.out.println("finalMoves: " + finalMoves);
 		Random ran = new Random();
+		int score2 = 0;
+		List<Move> bestFinalMove = new ArrayList<>();
 		//If there are more than possible moves, randomly choose among those moves
-		if(finalMoves.size() > 1){
-			// TODO : 파이널무브즈 수 하나 이상일 때 겟어베일러블무브 수 비교해서 가장 높은 걸로
-			for(Move move : finalMoves) {
-				int thisScore = graph.adjacentNodes(updateLocation(move)).size();
-				if (thisScore > score){
-					finalMoves.clear();
-					score = thisScore;
-					finalMoves.add(move);
-				}
-			}
-			int randomIndex = ran.nextInt(finalMoves.size());
-			finalMove = possible.get(randomIndex);
-		}
-		else if(finalMoves.isEmpty()){
+		if(possible.isEmpty()){
 			int randomIndex = ran.nextInt(bestMoves.size());
 			finalMove = bestMoves.get(randomIndex);
 		}
+		else if(finalMoves.size() > 1){
+			// TODO : 파이널무브즈 수 하나 이상일 때 겟어베일러블무브 수 비교해서 가장 높은 걸로
+			for(Move move : finalMoves) {
+				int thisScore2 = graph.adjacentNodes(updateLocation(move)).size();
+				if (thisScore2 > score2){
+					score2 = thisScore2;
+					bestFinalMove.clear();
+					bestFinalMove.add(move);
+				}
+				else if(thisScore2 == score2){
+					bestFinalMove.add(move);
+				}
+			}
+			System.out.println("bestFinalMove: " + bestFinalMove);
+			int randomIndex = ran.nextInt(finalMoves.size());
+			finalMove = bestFinalMove.get(randomIndex);
+		}
+
 		else finalMove = finalMoves.get(0);
 		System.out.println("finalMove: " + finalMove);
 		return finalMove;
