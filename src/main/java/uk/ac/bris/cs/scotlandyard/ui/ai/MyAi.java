@@ -49,9 +49,6 @@ public class MyAi implements Ai {
 	private Integer miniMax(Board board, int depth, int alpha, int beta, Boolean checkMrX) {
 		Board.GameState gameState = (Board.GameState) board;
 		if (depth == 0 || !board.getWinner().isEmpty()) {
-//			calculateDistance(board, move, gameState.getSetup().graph);
-//			mrXBestMove(gameState.getSetup().graph, board, depth)
-
 			return (int)Double.NEGATIVE_INFINITY;
 		}
 		if (checkMrX) {
@@ -88,7 +85,8 @@ public class MyAi implements Ai {
 
 		for (Move move : board.getAvailableMoves()) {
 			Board updated = updatedBoard(board, move);
-			int eval = miniMax(board, depth - 1, alpha, beta, false);
+			//do minimax with updatedBoard after designated move
+			int eval = miniMax(updated, depth - 1, alpha, beta, true);
 			if (maxEval < eval) {
 				maxEval = eval;
 				bestMoves.clear();
