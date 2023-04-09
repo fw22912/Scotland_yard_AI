@@ -36,7 +36,8 @@ public class MyAi implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 7);
+		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 5);
+		System.out.println("=====================================LOOP ENDS================================================");
 		return finalMove;
 	}
 
@@ -136,16 +137,17 @@ public class MyAi implements Ai {
 			for(Move move : highestScore) {
 				int thisScore2 = graph.adjacentNodes(updateLocation(move)).size();
 				if (thisScore2 > score2){
-					score2 = thisScore2;
 					finalMoves.clear();
+					score2 = thisScore2;
 					finalMoves.add(move);
 				}
 				else if(thisScore2 == score2){
 					finalMoves.add(move);
-					System.out.println("finalMoves: " + finalMoves + "score: " + thisScore2);
+//					System.out.println("Among highestMove: " + move + " getAvailablenodescore: " + thisScore2);
 				}
 			}
 			int randomIndex = ran.nextInt(finalMoves.size());
+			System.out.println("finalMoves: " + finalMoves);
 			finalMove = finalMoves.get(randomIndex);
 		}
 		else finalMove = highestScore.get(0);
@@ -246,84 +248,53 @@ public class MyAi implements Ai {
 	}
 
 
-
 	//Scoring method, uses Dijkstra's algorithm
 	//It returns the distance from the detectives' location to mrX's destination
-	private Integer calculateDistance(Board board,
-									  Move move,
-									  ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
+	private Integer calculateDistance(Board board, Move move, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
 		List<Integer> detectivesLocation = getDetectivesLocation(board);
 		int totalVal = 0;
 		int size = 0;
+		List<List<Integer>> listOfPath = new ArrayList<>();
+		List<List<Integer>> allPath = new ArrayList<>();
 
-		System.out.println("============================STARTS NEW LOOP=============================");
-		//calculating the distance from every detective's location
 		for (Integer detectiveLocation : detectivesLocation) {
-			// Instantiate distance
 			Map<Integer, Integer> distance = new HashMap<>();
-			// Instantiate preNode
 			Map<Integer, Integer> preNode = new HashMap<>();
-//			Map<Integer, ScotlandYard.Ticket> trackTransport = new HashMap<>();
-//			int totalTicket = 0;
-
-			//put the maximum value of incident edges(values) so that we could overwrite the
-			//smaller value everytime they show up
 			for (Integer node : graph.nodes()) {
 				distance.put(node, Integer.MAX_VALUE);
 				preNode.put(node, null);
-//				trackTransport.put(node, null);
 			}
 			distance.put(detectiveLocation, 0);
-//			preNode.get(detectiveLocation);
-			// Create priority queue and add source node with distance 0
 			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
 			queue.add(detectiveLocation);
-
-			// Setting the destination
 			int mrXLocation = updateLocation(move);
-
-			// Run Dijkstra's Algorithm
 			while (!queue.isEmpty()) {
 				Integer currentNode = queue.poll();
-
 				if (currentNode.equals(mrXLocation)) break;
 				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
 					Integer neighbour = edge.adjacentNode(currentNode);
-					// Calculate new distance
-//					int ticketVal = 0;
-//					ticketVal += transportationCost(board, updateTicket(move));
-//					System.out.println("ticketVal: " + ticketVal);
-					//add up the ticket value to newDistance
 					int newDistance = distance.get(currentNode);
-//					System.out.println("CURRENT: " + distance.get(currentNode));
-
-					//update the shortest path to mrX's location
 					if (newDistance < distance.get(neighbour)) {
-						// Update distance and previous node
-//						System.out.println("-------------------------------------------------");
 						distance.put(neighbour, transportationCost(board, updateTicket(move)));
-//						System.out.println("MOVE: " + move);
-//						System.out.println("transportation: " + updateTicket(move));
-//						System.out.println("COST: " + transportationCost(board, updateTicket(move)));
 						preNode.replace(neighbour, currentNode);
 						queue.remove(neighbour);
 						queue.add(neighbour);
 					}
-//					totalTicket += ticketVal;
 				}
 			}
-
 			List<Integer> path = new ArrayList<>();
 			Integer node = mrXLocation;
 			while(node != null){
 				path.add(node);
 				node = preNode.get(node);
 			}
-			size += path.size();
-			totalVal += preNode.size();
-//			size += totalTicket;
+			if(path.size() < 4){
+				listOfPath.add(path);
+			}
+			allPath.add(path);
+			System.out.println("path: " + path);
 		}
-		System.out.println("size: " + size);
+		size = listOfPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : listOfPath.stream().mapToInt(List::size).sum();
 		return size;
 	}
 }
