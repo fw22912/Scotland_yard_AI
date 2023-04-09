@@ -79,24 +79,24 @@ public class MyAi implements Ai {
 
 	//chooses the best move for MrX
 	private List<Move> scoreToMoves(Board board, int depth) {
-		int maxEval = (int) Double.NEGATIVE_INFINITY;
+		int minEval = (int) Double.POSITIVE_INFINITY;
 		int alpha = (int) Double.NEGATIVE_INFINITY;
 		int beta = (int) Double.POSITIVE_INFINITY;
-		List<Move> bestMoves = new ArrayList<>();
+		List<Move> firstMoves = new ArrayList<>();
 
 		for (Move move : board.getAvailableMoves()) {
 			Board updated = updatedBoard(board, move);
 			//do minimax with updatedBoard after designated move
 			int eval = miniMax(updated, depth - 1, alpha, beta, true);
-			if (maxEval < eval) {
-				maxEval = eval;
-				bestMoves.clear();
-				bestMoves.add(move);
-			} else if (maxEval == eval) {
-				bestMoves.add(move);
+			if (minEval > eval) {
+				minEval = eval;
+				firstMoves.clear();
+				firstMoves.add(move);
+			} else if (minEval == eval) {
+				firstMoves.add(move);
 			}
 		}
-		return bestMoves;
+		return firstMoves;
 	}
 
 
@@ -105,14 +105,13 @@ public class MyAi implements Ai {
 		Move finalMove;
 		int score = 0;
 		List<Move> firstMoves = scoreToMoves(board, depth);
-		System.out.println("===================NEW LOOP====================");
-		System.out.println("firstMoves: " + firstMoves);
 		List<Move> noAdjacent = checkAdjacent(board, firstMoves);
-		System.out.println("noAdjacent: " + noAdjacent);
 		List<Move> highestScore = new ArrayList<>();
+		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
 		for (Move move : noAdjacent) {
 			int thisScore = calculateDistance(board, move, graph);
+			System.out.println("MOVE: " + move + "  score: " + thisScore);
 			if(thisScore > score){
 				highestScore.clear();
 				score = thisScore;
@@ -122,10 +121,8 @@ public class MyAi implements Ai {
 				highestScore.add(move);
 			}
 		}
-		System.out.println("thirdMoves: " + highestScore);
 		Random ran = new Random();
 		int score2 = 0;
-		List<Move> finalMoves = new ArrayList<>();
 		//If there are more than possible moves, randomly choose among those moves
 		if(noAdjacent.isEmpty()){
 			int randomIndex = ran.nextInt(firstMoves.size());
@@ -144,13 +141,11 @@ public class MyAi implements Ai {
 					finalMoves.add(move);
 				}
 			}
-			System.out.println("finalMoves: " + finalMoves);
 			int randomIndex = ran.nextInt(finalMoves.size());
 			finalMove = finalMoves.get(randomIndex);
 		}
 
 		else finalMove = highestScore.get(0);
-		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
@@ -241,7 +236,7 @@ public class MyAi implements Ai {
 				case BUS -> ticketVal += 2;
 				case UNDERGROUND -> ticketVal += 3;
 //			case DOUBLE -> ticketVal -= 6;
-				case SECRET -> ticketVal += 4;
+				case SECRET -> ticketVal += 0;
 			}
 		}
 		return ticketVal;
@@ -256,13 +251,17 @@ public class MyAi implements Ai {
 									  ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
 		List<Integer> detectivesLocation = getDetectivesLocation(board);
 		int totalVal = 0;
+		int size = 0;
 
+		System.out.println("============================STARTS NEW LOOP=============================");
+		System.out.println("Move: " + move);
 		//calculating the distance from every detective's location
 		for (Integer detectiveLocation : detectivesLocation) {
 			// Instantiate distance
 			Map<Integer, Integer> distance = new HashMap<>();
 			// Instantiate preNode
 			Map<Integer, Integer> preNode = new HashMap<>();
+			int totalTicket = 0;
 
 			//put the maximum value of incident edges(values) so that we could overwrite the
 			//smaller value everytime they show up
@@ -271,6 +270,8 @@ public class MyAi implements Ai {
 				preNode.put(node, null);
 			}
 			distance.put(detectiveLocation, 0);
+			preNode.get(detectiveLocation);
+			System.out.println("detectives' start: " +detectiveLocation);
 			// Create priority queue and add source node with distance 0
 			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
 			queue.add(detectiveLocation);
@@ -283,28 +284,39 @@ public class MyAi implements Ai {
 				Integer currentNode = queue.poll();
 
 				if (currentNode.equals(mrXLocation)) break;
-
 				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
 					Integer neighbour = edge.adjacentNode(currentNode);
 					// Calculate new distance
 					int ticketVal = 0;
 					ticketVal += transportationCost(board, updateTicket(move));
-
+					System.out.println(ticketVal);
 					//add up the ticket value to newDistance
-					int newDistance = distance.get(currentNode) + ticketVal;
+					int newDistance = distance.get(currentNode);
+					System.out.println("CURRENT: " + distance.get(currentNode));
 
 					//update the shortest path to mrX's location
 					if (newDistance < distance.get(neighbour)) {
 						// Update distance and previous node
 						distance.put(neighbour, newDistance);
-						preNode.put(neighbour, currentNode);
+						preNode.replace(neighbour, currentNode);
 						queue.remove(neighbour);
 						queue.add(neighbour);
 					}
+					totalTicket += ticketVal;
 				}
 			}
-			totalVal += distance.get(updateLocation(move));
+
+			List<Integer> path = new ArrayList<>();
+			Integer node = mrXLocation;
+			while(node != null){
+				path.add(node);
+				node = preNode.get(node);
+			}
+			size += path.size();
+			totalVal += preNode.size();
+			size += totalTicket;
 		}
-		return totalVal;
+		System.out.println(size);
+		return size;
 	}
 }
