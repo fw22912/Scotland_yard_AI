@@ -36,7 +36,7 @@ public class MyAi implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 5);
+		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 7);
 		return finalMove;
 	}
 
@@ -105,7 +105,9 @@ public class MyAi implements Ai {
 		Move finalMove;
 		int score = 0;
 		List<Move> firstMoves = scoreToMoves(board, depth);
+		System.out.println("firstMoves: " + firstMoves);
 		List<Move> noAdjacent = checkAdjacent(board, firstMoves);
+		System.out.println("noAdjacent: " + noAdjacent);
 		List<Move> highestScore = new ArrayList<>();
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
@@ -121,6 +123,7 @@ public class MyAi implements Ai {
 				highestScore.add(move);
 			}
 		}
+		System.out.println("highestScore: " + highestScore);
 		Random ran = new Random();
 		int score2 = 0;
 		//If there are more than possible moves, randomly choose among those moves
@@ -139,13 +142,14 @@ public class MyAi implements Ai {
 				}
 				else if(thisScore2 == score2){
 					finalMoves.add(move);
+					System.out.println("finalMoves: " + finalMoves + "score: " + thisScore2);
 				}
 			}
 			int randomIndex = ran.nextInt(finalMoves.size());
 			finalMove = finalMoves.get(randomIndex);
 		}
-
 		else finalMove = highestScore.get(0);
+		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
@@ -234,7 +238,7 @@ public class MyAi implements Ai {
 			switch (ticket) {
 				case TAXI -> ticketVal += 2;
 				case BUS -> ticketVal += 4;
-				case UNDERGROUND -> ticketVal += 6;
+				case UNDERGROUND -> ticketVal += 8;
 				case SECRET -> ticketVal += 5;
 			}
 		}
@@ -270,7 +274,7 @@ public class MyAi implements Ai {
 //				trackTransport.put(node, null);
 			}
 			distance.put(detectiveLocation, 0);
-			preNode.get(detectiveLocation);
+//			preNode.get(detectiveLocation);
 			// Create priority queue and add source node with distance 0
 			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
 			queue.add(detectiveLocation);
@@ -286,21 +290,21 @@ public class MyAi implements Ai {
 				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
 					Integer neighbour = edge.adjacentNode(currentNode);
 					// Calculate new distance
-					int ticketVal = 0;
-					ticketVal += transportationCost(board, updateTicket(move));
-					System.out.println(ticketVal);
+//					int ticketVal = 0;
+//					ticketVal += transportationCost(board, updateTicket(move));
+//					System.out.println("ticketVal: " + ticketVal);
 					//add up the ticket value to newDistance
 					int newDistance = distance.get(currentNode);
-					System.out.println("CURRENT: " + distance.get(currentNode));
+//					System.out.println("CURRENT: " + distance.get(currentNode));
 
 					//update the shortest path to mrX's location
 					if (newDistance < distance.get(neighbour)) {
 						// Update distance and previous node
-						System.out.println("-------------------------------------------------");
+//						System.out.println("-------------------------------------------------");
 						distance.put(neighbour, transportationCost(board, updateTicket(move)));
-						System.out.println("MOVE: " + move);
-						System.out.println("transportation: " + updateTicket(move));
-						System.out.println("COST: " + transportationCost(board, updateTicket(move)));
+//						System.out.println("MOVE: " + move);
+//						System.out.println("transportation: " + updateTicket(move));
+//						System.out.println("COST: " + transportationCost(board, updateTicket(move)));
 						preNode.replace(neighbour, currentNode);
 						queue.remove(neighbour);
 						queue.add(neighbour);
@@ -319,7 +323,7 @@ public class MyAi implements Ai {
 			totalVal += preNode.size();
 //			size += totalTicket;
 		}
-		System.out.println(size);
+		System.out.println("size: " + size);
 		return size;
 	}
 }
