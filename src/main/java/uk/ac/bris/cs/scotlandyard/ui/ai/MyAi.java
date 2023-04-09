@@ -4,22 +4,13 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import javax.annotation.Nonnull;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.ImmutableValueGraph;
 import io.atlassian.fugue.Pair;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.units.qual.A;
-import org.w3c.dom.Node;
-import uk.ac.bris.cs.scotlandyard.event.GameOver;
 import uk.ac.bris.cs.scotlandyard.model.*;
 
 public class MyAi implements Ai {
@@ -37,7 +28,6 @@ public class MyAi implements Ai {
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
 		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 5);
-		System.out.println("=====================================LOOP ENDS================================================");
 		return finalMove;
 	}
 
@@ -53,7 +43,7 @@ public class MyAi implements Ai {
 		}
 		if (checkMrX) {
 			int maxEval = Integer.MIN_VALUE;
-			for (Move child : board.getAvailableMoves()) {
+			for (Move child : board.getAvailableMoves().asList()) {
 				int eval = minimax(board, child, depth - 1, alpha, beta, false);
 				maxEval = Math.max(maxEval, eval);
 				alpha = Math.max(alpha, maxEval);
@@ -65,10 +55,10 @@ public class MyAi implements Ai {
 		}
 		else {
 			int minEval = Integer.MAX_VALUE;
-			for (Move child : board.getAvailableMoves()) {
+			for (Move child : board.getAvailableMoves().asList()) {
 				int eval = minimax(board, child, depth - 1, alpha, beta, true);
 				minEval = Math.min(minEval, eval);
-				beta = Math.min(beta, minEval);
+				beta = Math.min(minEval, beta);
 				if (beta <= alpha) {
 					break;
 				}
@@ -76,6 +66,22 @@ public class MyAi implements Ai {
 			return minEval;
 		}
 	}
+
+	private Integer SingleOrDouble(Board board, Move move){
+		return move.accept(new Move.Visitor<>() {
+			Board.GameState gameState = (Board.GameState) board;
+			@Override
+			public Integer visit(Move.SingleMove move) {
+				return calculateDistance(board, move, gameState.getSetup().graph);
+			}
+
+			@Override
+			public Integer visit(Move.DoubleMove move) {
+				return 80;
+			}
+		});
+	}
+
 
 
 	//chooses the best move for MrX
@@ -105,59 +111,51 @@ public class MyAi implements Ai {
 	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
 		Move finalMove;
 		int score = 0;
+		Random ran = new Random();
 		List<Move> optimalMoves = getOptimalMoves(board, depth);
-		System.out.println("firstMoves: " + optimalMoves);
 		List<Move> noAdjacent = checkAdjacent(board, optimalMoves);
-		System.out.println("noAdjacent: " + noAdjacent);
 		List<Move> highestScore = new ArrayList<>();
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
-		for (Move move : noAdjacent) {
-			int thisScore = calculateDistance(board, move, graph);
-			System.out.println("MOVE: " + move + "  score: " + thisScore);
-			if(thisScore > score){
-				highestScore.clear();
-				score = thisScore;
-				highestScore.add(move);
-			}
-			else if(thisScore == score){
-				highestScore.add(move);
-			}
-		}
-		System.out.println("highestScore: " + highestScore);
-		Random ran = new Random();
-		int score2 = 0;
-		//If there are more than possible moves, randomly choose among those moves
 		if(noAdjacent.isEmpty()){
 			int randomIndex = ran.nextInt(optimalMoves.size());
 			finalMove = optimalMoves.get(randomIndex);
 		}
-		else if(highestScore.size() > 1){
-			// TODO : 파이널무브즈 수 하나 이상일 때 겟어베일러블무브 수 비교해서 가장 높은 걸로
-			for(Move move : highestScore) {
-				int thisScore2 = graph.adjacentNodes(updateLocation(move)).size();
-				if (thisScore2 > score2){
-					finalMoves.clear();
-					score2 = thisScore2;
-					finalMoves.add(move);
+		else{
+			for (Move move : noAdjacent) {
+				int thisScore = SingleOrDouble(board, move);
+				if(thisScore > score){
+					highestScore.clear();
+					score = thisScore;
+					highestScore.add(move);
 				}
-				else if(thisScore2 == score2){
-					finalMoves.add(move);
-//					System.out.println("Among highestMove: " + move + " getAvailablenodescore: " + thisScore2);
+				else if(thisScore == score){
+					highestScore.add(move);
 				}
 			}
-			int randomIndex = ran.nextInt(finalMoves.size());
-			System.out.println("finalMoves: " + finalMoves);
-			finalMove = finalMoves.get(randomIndex);
+			int score2 = 0;
+			//If there are more than possible moves, randomly choose among those moves
+
+			if(highestScore.size() > 1){
+				for(Move move : highestScore) {
+					int thisScore2 = transportationCost(board, updateTicket(move)) + graph.adjacentNodes(updateLocation(move)).size();
+					if (thisScore2 > score2){
+						score2 = thisScore2;
+						finalMoves.clear();
+						finalMoves.add(move);
+					}
+					else if(thisScore2 == score2){
+						finalMoves.add(move);
+					}
+				}
+				int randomIndex = ran.nextInt(finalMoves.size());
+				finalMove = finalMoves.get(randomIndex);
+			}
+			else finalMove = highestScore.get(0);
 		}
-		else finalMove = highestScore.get(0);
-		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
-//	private Integer numberOfAvailableMoves(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Move move) {
-//		return graph.incidentEdges(updateLocation(move)).size();
-//	}
 
 	//a function that checks whether this move is safe or not
 	//it returns a list of the nodes that are not adjacent to detectives' locations
