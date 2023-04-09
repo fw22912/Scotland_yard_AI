@@ -232,11 +232,10 @@ public class MyAi implements Ai {
 		int ticketVal = 0;
 		for(ScotlandYard.Ticket ticket : tickets){
 			switch (ticket) {
-				case TAXI -> ticketVal += 1;
-				case BUS -> ticketVal += 2;
-				case UNDERGROUND -> ticketVal += 3;
-//			case DOUBLE -> ticketVal -= 6;
-				case SECRET -> ticketVal += 0;
+				case TAXI -> ticketVal += 2;
+				case BUS -> ticketVal += 4;
+				case UNDERGROUND -> ticketVal += 6;
+				case SECRET -> ticketVal += 5;
 			}
 		}
 		return ticketVal;
@@ -254,24 +253,24 @@ public class MyAi implements Ai {
 		int size = 0;
 
 		System.out.println("============================STARTS NEW LOOP=============================");
-		System.out.println("Move: " + move);
 		//calculating the distance from every detective's location
 		for (Integer detectiveLocation : detectivesLocation) {
 			// Instantiate distance
 			Map<Integer, Integer> distance = new HashMap<>();
 			// Instantiate preNode
 			Map<Integer, Integer> preNode = new HashMap<>();
-			int totalTicket = 0;
+//			Map<Integer, ScotlandYard.Ticket> trackTransport = new HashMap<>();
+//			int totalTicket = 0;
 
 			//put the maximum value of incident edges(values) so that we could overwrite the
 			//smaller value everytime they show up
 			for (Integer node : graph.nodes()) {
 				distance.put(node, Integer.MAX_VALUE);
 				preNode.put(node, null);
+//				trackTransport.put(node, null);
 			}
 			distance.put(detectiveLocation, 0);
 			preNode.get(detectiveLocation);
-			System.out.println("detectives' start: " +detectiveLocation);
 			// Create priority queue and add source node with distance 0
 			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
 			queue.add(detectiveLocation);
@@ -297,12 +296,16 @@ public class MyAi implements Ai {
 					//update the shortest path to mrX's location
 					if (newDistance < distance.get(neighbour)) {
 						// Update distance and previous node
-						distance.put(neighbour, newDistance);
+						System.out.println("-------------------------------------------------");
+						distance.put(neighbour, transportationCost(board, updateTicket(move)));
+						System.out.println("MOVE: " + move);
+						System.out.println("transportation: " + updateTicket(move));
+						System.out.println("COST: " + transportationCost(board, updateTicket(move)));
 						preNode.replace(neighbour, currentNode);
 						queue.remove(neighbour);
 						queue.add(neighbour);
 					}
-					totalTicket += ticketVal;
+//					totalTicket += ticketVal;
 				}
 			}
 
@@ -314,7 +317,7 @@ public class MyAi implements Ai {
 			}
 			size += path.size();
 			totalVal += preNode.size();
-			size += totalTicket;
+//			size += totalTicket;
 		}
 		System.out.println(size);
 		return size;
