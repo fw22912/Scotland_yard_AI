@@ -27,7 +27,8 @@ public class MyAi implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 5);
+		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 7);
+		System.out.println("------------------------------------------LOOP ENDS---------------------------------------------");
 		return finalMove;
 	}
 
@@ -77,7 +78,8 @@ public class MyAi implements Ai {
 
 			@Override
 			public Integer visit(Move.DoubleMove move) {
-				return 80;
+				// TODO when double move
+				return calculateDistance(board, move, gameState.getSetup().graph)/3;
 			}
 		});
 	}
@@ -113,7 +115,9 @@ public class MyAi implements Ai {
 		int score = 0;
 		Random ran = new Random();
 		List<Move> optimalMoves = getOptimalMoves(board, depth);
+		System.out.println("optimalMoves: " + optimalMoves);
 		List<Move> noAdjacent = checkAdjacent(board, optimalMoves);
+		System.out.println("noAdjacent: " + noAdjacent);
 		List<Move> highestScore = new ArrayList<>();
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
@@ -133,12 +137,15 @@ public class MyAi implements Ai {
 					highestScore.add(move);
 				}
 			}
+			System.out.println("highestScore: " + highestScore);
+
 			int score2 = 0;
 			//If there are more than possible moves, randomly choose among those moves
 
 			if(highestScore.size() > 1){
 				for(Move move : highestScore) {
 					int thisScore2 = transportationCost(board, updateTicket(move)) + graph.adjacentNodes(updateLocation(move)).size();
+					System.out.println("MOVE: " + move + "score: " + thisScore2);
 					if (thisScore2 > score2){
 						score2 = thisScore2;
 						finalMoves.clear();
@@ -150,9 +157,11 @@ public class MyAi implements Ai {
 				}
 				int randomIndex = ran.nextInt(finalMoves.size());
 				finalMove = finalMoves.get(randomIndex);
+				System.out.println("finalMoves: " + finalMoves);
 			}
 			else finalMove = highestScore.get(0);
 		}
+		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
@@ -236,7 +245,7 @@ public class MyAi implements Ai {
 		int ticketVal = 0;
 		for(ScotlandYard.Ticket ticket : tickets){
 			switch (ticket) {
-				case TAXI -> ticketVal += 2;
+				case TAXI, SECRET -> ticketVal += 2;
 				case BUS -> ticketVal += 4;
 				case UNDERGROUND -> ticketVal += 8;
 			}
@@ -249,7 +258,7 @@ public class MyAi implements Ai {
 	//It returns the distance from the detectives' location to mrX's destination
 	private Integer calculateDistance(Board board, Move move, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
 		List<Integer> detectivesLocation = getDetectivesLocation(board);
-		int size = 0;
+		int size;
 		List<List<Integer>> shortPath = new ArrayList<>();
 		List<List<Integer>> allPath = new ArrayList<>();
 
@@ -288,9 +297,10 @@ public class MyAi implements Ai {
 				shortPath.add(path);
 			}
 			allPath.add(path);
-			System.out.println("path: " + path);
+			System.out.println("move: " + move + " path: " + path);
 		}
 		size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
+		System.out.println("size: " + size);
 		return size;
 	}
 }
