@@ -1,6 +1,5 @@
 package uk.ac.bris.cs.scotlandyard.ui.ai;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -13,7 +12,7 @@ import com.google.common.graph.ImmutableValueGraph;
 import io.atlassian.fugue.Pair;
 import uk.ac.bris.cs.scotlandyard.model.*;
 
-public class MyAi implements Ai {
+public class PLZ implements Ai {
 
 	@Nonnull
 	@Override
@@ -27,7 +26,7 @@ public class MyAi implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 7);
+		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 8);
 		System.out.println("------------------------------------------LOOP ENDS---------------------------------------------");
 		return finalMove;
 	}
@@ -240,14 +239,17 @@ public class MyAi implements Ai {
 	}
 
 
-	//Weighting transportation tickets
 	private Integer transportationCost(Board board, List<ScotlandYard.Ticket> tickets) {
+		List<LogEntry> mrXLog = board.getMrXTravelLog();
 		int ticketVal = 0;
 		for(ScotlandYard.Ticket ticket : tickets){
-			switch (ticket) {
-				case TAXI, SECRET -> ticketVal += 2;
-				case BUS -> ticketVal += 4;
-				case UNDERGROUND -> ticketVal += 8;
+			if(ticket.equals(ScotlandYard.Ticket.TAXI)) ticketVal += 2;
+			if(ticket.equals(ScotlandYard.Ticket.BUS)) ticketVal += 4;
+			if(ticket.equals(ScotlandYard.Ticket.UNDERGROUND)) ticketVal += 8;
+			if(ticket.equals(ScotlandYard.Ticket.SECRET)) {
+				//TODO when secret ticket
+				if(board.getSetup().moves.get(mrXLog.size()+4)) {ticketVal += 20;}
+				else ticketVal += 1;
 			}
 		}
 		return ticketVal;
