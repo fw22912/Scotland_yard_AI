@@ -77,10 +77,7 @@ public class PLZ implements Ai {
 
 			@Override
 			public Integer visit(Move.DoubleMove move) {
-				List<Move> doubleMove = new ArrayList<>();
-				doubleMove.add(move);
-				// TODO when double move
-				return calculateDistance(board, move, gameState.getSetup().graph) * (checkAdjacent(board, doubleMove).size());
+				return calculateDistance(board, move, gameState.getSetup().graph) * (adjacentNum(board, move));
 			}
 		});
 	}
@@ -181,6 +178,20 @@ public class PLZ implements Ai {
 		return possible;
 	}
 
+	private Integer adjacentNum(Board board, Move move){
+		final Board.GameState gameState = (Board.GameState) board;
+		Set<Integer> detectivesLocation = getDetectivesLocation(board);
+		Set<Integer> mrXAdjacent = gameState.getSetup().graph.adjacentNodes(updateLocation(move));
+		int count = 0;
+		for(Integer adjacent : mrXAdjacent){
+			//if there are no detectives around add the move to the list
+			if(!detectivesLocation.add(adjacent)){
+				count++;
+			}
+		}
+		return count;
+	}
+
 
 	//a method that returns all adjacent nodes from detectives' current location
 	private Set<Integer> detectiveAdjacent(Move move, Board board){
@@ -194,9 +205,10 @@ public class PLZ implements Ai {
 	}
 
 
+
 	//a helper method that gathers all detectives' locations
-	private static List<Integer> getDetectivesLocation(Board board) {
-		List<Integer> locations = new ArrayList<>();
+	private static Set<Integer> getDetectivesLocation(Board board) {
+		Set<Integer> locations = new HashSet<>();
 		for (Piece piece : board.getPlayers()) {
 			if (!piece.isMrX()) {
 				locations.add(board.getDetectiveLocation((Piece.Detective) piece).get());
@@ -250,7 +262,6 @@ public class PLZ implements Ai {
 			if(ticket.equals(ScotlandYard.Ticket.SECRET)) {
 				//TODO when secret ticket
 				if(board.getSetup().moves.get(mrXLog.size()+4)) {ticketVal += 20;}
-				else ticketVal += 1;
 			}
 		}
 		return ticketVal;
@@ -260,7 +271,7 @@ public class PLZ implements Ai {
 	//Scoring method, uses Dijkstra's algorithm
 	//It returns the distance from the detectives' location to mrX's destination
 	private Integer calculateDistance(Board board, Move move, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-		List<Integer> detectivesLocation = getDetectivesLocation(board);
+		Set<Integer> detectivesLocation = getDetectivesLocation(board);
 		int size;
 		List<List<Integer>> shortPath = new ArrayList<>();
 		List<List<Integer>> allPath = new ArrayList<>();
