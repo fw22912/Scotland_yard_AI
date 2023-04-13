@@ -69,7 +69,7 @@ public class PLZ implements Ai {
 
 	private Integer SingleOrDouble(Board board, Move move){
 		return move.accept(new Move.Visitor<>() {
-			Board.GameState gameState = (Board.GameState) board;
+			final Board.GameState gameState = (Board.GameState) board;
 			@Override
 			public Integer visit(Move.SingleMove move) {
 				return calculateDistance(board, move, gameState.getSetup().graph);
@@ -168,10 +168,9 @@ public class PLZ implements Ai {
 	//a function that checks whether this move is safe or not
 	//it returns a list of the nodes that are not adjacent to detectives' locations
 	private List<Move> checkAdjacent(Board board, List<Move> bestMoves){
-		Board.GameState gameState = (Board.GameState) board;
 		List<Move> possible = new ArrayList<>();
 		for(Move move : bestMoves){
-			Set<Integer> occupation = detectiveAdjacent(move, board, gameState.getSetup().graph);
+			Set<Integer> occupation = detectiveAdjacent(move, board);
 			//if there are no detectives around add the move to the list
 			if(occupation.add(updateLocation(move))){
 				possible.add(move);
@@ -182,7 +181,7 @@ public class PLZ implements Ai {
 
 
 	//a method that returns all adjacent nodes from detectives' current location
-	private Set<Integer> detectiveAdjacent(Move move, Board board, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
+	private Set<Integer> detectiveAdjacent(Move move, Board board){
 		Board newBoard = updatedBoard(board, move);
 		Set<Integer> availableLocation = new HashSet<>();
 		//places where detectives can go
@@ -223,7 +222,7 @@ public class PLZ implements Ai {
 	//helper method that returns used tickets for the move
 	public static List<ScotlandYard.Ticket> updateTicket(Move move){
 		return move.accept(new Move.Visitor<>() {
-			List<ScotlandYard.Ticket> newTicket = new ArrayList<>();
+			final List<ScotlandYard.Ticket> newTicket = new ArrayList<>();
 			@Override
 			public List<ScotlandYard.Ticket> visit(Move.SingleMove move) {
 				newTicket.add(move.ticket);
