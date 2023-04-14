@@ -66,7 +66,7 @@ public class PLZ implements Ai {
 	}
 
 	//a method that returns the score based on the type of the move
-	private Integer SingleOrDouble(Board board, Move move){
+	private Integer calculateMoveDistance(Board board, Move move){
 		return move.accept(new Move.Visitor<>() {
 			final Board.GameState gameState = (Board.GameState) board;
 			@Override
@@ -108,42 +108,41 @@ public class PLZ implements Ai {
 
 	//return the best move
 	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
-		Move finalMove;
+		Move bestMove;
 		int score = 0;
 		Random ran = new Random();
 		List<Move> optimalMoves = getOptimalMoves(board, depth);
 		List<Move> noAdjacent = checkAdjacent(board, optimalMoves);
 		List<Move> highestScore = new ArrayList<>();
 		List<Move> finalMoves = new ArrayList<>();
-		boolean check = false;
+		boolean checkDoubleMove = false;
 		//if mrX is cornered by detectives, choose any move
 		if(noAdjacent.isEmpty()){
 			int randomIndex = ran.nextInt(optimalMoves.size());
-			finalMove = optimalMoves.get(randomIndex);
+			bestMove = optimalMoves.get(randomIndex);
 		}
 		else{
 			for (Move move : noAdjacent) {
-				int thisScore = SingleOrDouble(board, move);
+				int thisScore = calculateMoveDistance(board, move);
 				//if it's new highest score
 				if(thisScore > score){
 					score = thisScore;
 					highestScore.clear();
 					highestScore.add(move);
 				}
-				//if the score is equal to the current higehst score
+				//if the score is equal to the current highest score
 				else if(thisScore == score){
 					highestScore.add(move);
 				}
 			}
-			/*TODO check if there are only double moves in highestScore and if correct make check true and vice versa */
 			//check if there are only double moves in highestScore
-			if(SingleOrDouble(board, highestScore.get(0)) == 0){
-				check = true;
+			if(calculateMoveDistance(board, highestScore.get(0)) == 0){
+				checkDoubleMove = true;
 			}
 			int score2 = 0;
 			/*If there are more than one possible moves, randomly choose among those moves
 			  and contains only Single moves*/
-			if(highestScore.size() > 1 && !check){
+			if(highestScore.size() > 1 && !checkDoubleMove){
 				for(Move move : highestScore) {
 					int thisScore2 = transportationCost(board, updateTicket(move)) + graph.adjacentNodes(updateLocation(move)).size();
 					//if any score is higher than score2 clear finalMoves and add the new move
@@ -158,29 +157,29 @@ public class PLZ implements Ai {
 					}
 				}
 				int randomIndex = ran.nextInt(finalMoves.size());
-				finalMove = finalMoves.get(randomIndex);
+				bestMove = finalMoves.get(randomIndex);
 			}
 			//if there are no other moves than double moves, return the farthest one from the detectives
-			else if(check){
-				int preScore = 0;
+			else if(checkDoubleMove){
+				int score3 = 0;
 				//get the move with the highest score
 				for(Move move: highestScore){
 					int doubleScore = calculateDistance(board, move, graph);
-					if(preScore < doubleScore){
-						preScore = doubleScore;
+					if(score3 < doubleScore){
+						score3 = doubleScore;
 						finalMoves.clear();
 						finalMoves.add(move);
 					}
-					else if(preScore == doubleScore){
+					else if(score3 == doubleScore){
 						finalMoves.add(move);
 					}
 				}
 				int randomIndex = ran.nextInt(finalMoves.size());
-				finalMove = finalMoves.get(randomIndex);
+				bestMove = finalMoves.get(randomIndex);
 			}
-			else finalMove = highestScore.get(0);
+			else bestMove = highestScore.get(0);
 		}
-		return finalMove;
+		return bestMove;
 	}
 
 
