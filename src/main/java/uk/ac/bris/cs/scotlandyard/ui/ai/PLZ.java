@@ -74,7 +74,7 @@ public class PLZ implements Ai {
 			public Integer visit(Move.SingleMove move) {
 				return calculateDistance(board, move, gameState.getSetup().graph);
 			}
-			//if it is double move, set it to the default value 0 whenever there are any possible single moves
+			//if it is double move, set it to the default value 0 whenever there are any possible singleMoves
 			@Override
 			public Integer visit(Move.DoubleMove move) {
 				return 0;
