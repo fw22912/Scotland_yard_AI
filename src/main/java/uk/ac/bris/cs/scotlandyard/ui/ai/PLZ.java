@@ -263,10 +263,11 @@ public class PLZ implements Ai {
 			if(ticket.equals(ScotlandYard.Ticket.TAXI)) ticketVal += 2;
 			if(ticket.equals(ScotlandYard.Ticket.BUS)) ticketVal += 4;
 			if(ticket.equals(ScotlandYard.Ticket.UNDERGROUND)) ticketVal += 8;
-			if (mrXLog.size() != 0)
+			if (mrXLog.size() != 0){
 				if(ticket.equals(ScotlandYard.Ticket.SECRET)) {
 					//if mrX's log size is larger than 0 and is after reveal
-				if(board.getSetup().moves.get(mrXLog.size() - 1)) {ticketVal += 20;}
+					if(board.getSetup().moves.get(mrXLog.size() - 1)) {ticketVal += 20;}
+				}
 			}
 		}
 		return ticketVal;
