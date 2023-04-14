@@ -76,8 +76,6 @@ public class PLZ implements Ai {
 
 			@Override
 			public Integer visit(Move.DoubleMove move) {
-				// TODO when double move
-//				return calculateDistance(board, move, gameState.getSetup().graph);
 				return 0;
 			}
 		});
