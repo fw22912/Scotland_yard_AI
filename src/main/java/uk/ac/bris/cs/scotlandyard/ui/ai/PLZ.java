@@ -163,7 +163,6 @@ public class PLZ implements Ai {
 			//if there are no other moves than double moves, return the farthest one from the detectives
 			else if(check){
 				int preScore = 0;
-				Move bestMove = null;
 				//get the move with the highest score
 				for(Move move: highestScore){
 					int doubleScore = calculateDistance(board, move, graph);
