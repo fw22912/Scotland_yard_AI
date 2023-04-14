@@ -27,7 +27,6 @@ public class PLZ implements Ai {
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
 		Move finalMove = mrXBestMove(gameState.getSetup().graph, board, 7);
-		System.out.println("------------------------------------------LOOP ENDS---------------------------------------------");
 		return finalMove;
 	}
 
@@ -115,9 +114,7 @@ public class PLZ implements Ai {
 		int score = 0;
 		Random ran = new Random();
 		List<Move> optimalMoves = getOptimalMoves(board, depth);
-		System.out.println("optimalMoves: " + optimalMoves);
 		List<Move> noAdjacent = checkAdjacent(board, optimalMoves);
-		System.out.println("noAdjacent: " + noAdjacent);
 		List<Move> highestScore = new ArrayList<>();
 		List<Move> finalMoves = new ArrayList<>();
 		//iterate through
@@ -137,7 +134,6 @@ public class PLZ implements Ai {
 					highestScore.add(move);
 				}
 			}
-			System.out.println("highestScore: " + highestScore);
 
 			int score2 = 0;
 			//If there are more than possible moves, randomly choose among those moves
@@ -145,7 +141,6 @@ public class PLZ implements Ai {
 			if(highestScore.size() > 1){
 				for(Move move : highestScore) {
 					int thisScore2 = transportationCost(board, updateTicket(move)) + graph.adjacentNodes(updateLocation(move)).size();
-					System.out.println("MOVE: " + move + "score: " + thisScore2);
 					if (thisScore2 > score2){
 						score2 = thisScore2;
 						finalMoves.clear();
@@ -157,11 +152,9 @@ public class PLZ implements Ai {
 				}
 				int randomIndex = ran.nextInt(finalMoves.size());
 				finalMove = finalMoves.get(randomIndex);
-				System.out.println("finalMoves: " + finalMoves);
 			}
 			else finalMove = highestScore.get(0);
 		}
-		System.out.println("finalMove: " + finalMove);
 		return finalMove;
 	}
 
@@ -250,9 +243,7 @@ public class PLZ implements Ai {
 			if(ticket.equals(ScotlandYard.Ticket.UNDERGROUND)) ticketVal += 8;
 			if (mrXLog.size() != 0)
 				if(ticket.equals(ScotlandYard.Ticket.SECRET)) {
-				//TODO when secret ticket
 				if(board.getSetup().moves.get(mrXLog.size() - 1)) {ticketVal += 20;}
-//				else ticketVal += 1;
 			}
 		}
 		return ticketVal;
@@ -302,10 +293,8 @@ public class PLZ implements Ai {
 				shortPath.add(path);
 			}
 			allPath.add(path);
-			System.out.println("move: " + move + " path: " + path);
 		}
 		size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
-		System.out.println("size: " + size);
 		return size;
 	}
 }
