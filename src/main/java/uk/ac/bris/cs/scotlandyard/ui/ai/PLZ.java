@@ -84,9 +84,9 @@ public class PLZ implements Ai {
 
 	//chooses the best move for MrX
 	private List<Move> getOptimalMoves(Board board, int depth) {
-		int minEval = (int) Double.POSITIVE_INFINITY;
-		int alpha = (int) Double.NEGATIVE_INFINITY;
-		int beta = (int) Double.POSITIVE_INFINITY;
+		int minEval = Integer.MAX_VALUE;
+		int alpha = Integer.MIN_VALUE;
+		int beta = Integer.MAX_VALUE;
 		List<Move> optimalMoves = new ArrayList<>();
 		//iterate through all the available moves and get a move with the highest minimax score
 		for (Move move : board.getAvailableMoves()) {
