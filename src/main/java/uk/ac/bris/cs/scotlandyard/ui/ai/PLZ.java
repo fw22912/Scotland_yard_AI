@@ -35,9 +35,11 @@ public class PLZ implements Ai {
 	}
 
 	//MINIMAX//
+//MINIMAX//
 	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, boolean checkMrX) {
+		Board.GameState gameState = (Board.GameState) board;
 		if (depth == 0 || !board.getWinner().isEmpty()) {
-			return updateLocation(move);
+//			return evaluate(board, move);
 		}
 		if (checkMrX) {
 			int maxEval = Integer.MIN_VALUE;
@@ -54,7 +56,8 @@ public class PLZ implements Ai {
 		else {
 			int minEval = Integer.MAX_VALUE;
 			for (Move child : board.getAvailableMoves().asList()) {
-				int eval = minimax(board, child, depth - 1, alpha, beta, true);
+				Board updated = updatedBoard(board, child);
+				int eval = minimax(updated, child, depth - 1, alpha, beta, true);
 				minEval = Math.min(minEval, eval);
 				beta = Math.min(minEval, beta);
 				if (beta <= alpha) {
@@ -84,25 +87,25 @@ public class PLZ implements Ai {
 
 	//chooses the best move for MrX
 	private List<Move> getOptimalMoves(Board board, int depth) {
-		int minEval = Integer.MAX_VALUE;
+		int maxEval = Integer.MIN_VALUE;
 		int alpha = Integer.MIN_VALUE;
 		int beta = Integer.MAX_VALUE;
-		List<Move> optimalMoves = new ArrayList<>();
+		List<Move> highestMove = new ArrayList<>();
 		//iterate through all the available moves and get a move with the highest minimax score
 		for (Move move : board.getAvailableMoves()) {
 			Board updated = updatedBoard(board, move);
 			//do minimax with updatedBoard after designated move
-			int eval = minimax(updated, move, depth, alpha, beta, true);
-			if (minEval > eval) {
-				minEval = eval;
-				optimalMoves.clear();
-				optimalMoves.add(move);
+			int eval = minimax(updated, move, depth, alpha, beta, false);
+			if (maxEval < eval) {
+				maxEval = eval;
+				highestMove.clear();
+				highestMove.add(move);
 			}
-			else if (minEval == eval) {
-				optimalMoves.add(move);
+			else if (maxEval == eval) {
+				highestMove.add(move);
 			}
 		}
-		return optimalMoves;
+		return highestMove;
 	}
 
 
