@@ -26,7 +26,7 @@ public class PLZ implements Ai {
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		Board.GameState gameState = (Board.GameState) board;
-		return mrXBestMove(gameState.getSetup().graph, board, 7);
+		return getOptimalMoves(board, 3);
 	}
 
 	//a method that return an updated board after particular move
@@ -34,19 +34,25 @@ public class PLZ implements Ai {
 		return ((Board.GameState) board).advance(move);
 	}
 
+	private boolean checkMrX(Move move){
+		return move.commencedBy().isMrX();
+	}
+
 //MINIMAX//
 	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, boolean checkMrX) {
 		Board.GameState gameState = (Board.GameState) board;
 		if (depth == 0 || !board.getWinner().isEmpty()) {
-//			return evaluate(board, move);
+//			System.out.println("depth 0 여기 오나요 제발");
+			return calculateDistance(board, move, gameState.getSetup().graph);
 		}
 		if (checkMrX) {
 			int maxEval = Integer.MIN_VALUE;
 			for (Move child : board.getAvailableMoves().asList()) {
 				Board updated = updatedBoard(board, child);
+//				System.out.println("체크미스터엑스 T 보드업데이트됨");
 				int eval = minimax(updated, child, depth - 1, alpha, beta, false);
 				maxEval = Math.max(maxEval, eval);
-				alpha = Math.max(alpha, maxEval);
+				alpha = Math.max(alpha, eval);
 				if (beta <= alpha) {
 					break;
 				}
@@ -57,9 +63,10 @@ public class PLZ implements Ai {
 			int minEval = Integer.MAX_VALUE;
 			for (Move child : board.getAvailableMoves().asList()) {
 				Board updated = updatedBoard(board, child);
+//				System.out.println("체크미스터엑스 F 보드업데이트됨");
 				int eval = minimax(updated, child, depth - 1, alpha, beta, true);
 				minEval = Math.min(minEval, eval);
-				beta = Math.min(minEval, beta);
+				beta = Math.min(eval, beta);
 				if (beta <= alpha) {
 					break;
 				}
@@ -86,16 +93,17 @@ public class PLZ implements Ai {
 
 
 	//chooses the best move for MrX
-	private List<Move> getOptimalMoves(Board board, int depth) {
+//	private List<Move> getOptimalMoves(Board board, int depth) {
+	private Move getOptimalMoves(Board board, int depth) {
 		int maxEval = Integer.MIN_VALUE;
 		int alpha = Integer.MIN_VALUE;
 		int beta = Integer.MAX_VALUE;
 		List<Move> highestMove = new ArrayList<>();
 		//iterate through all the available moves and get a move with the highest minimax score
 		for (Move move : board.getAvailableMoves()) {
-			Board updated = updatedBoard(board, move);
+//			Board updated = updatedBoard(board, move);
 			//do minimax with updatedBoard after designated move
-			int eval = minimax(updated, move, depth, alpha, beta, false);
+			int eval = minimax(board, move, depth - 1, alpha, beta, checkMrX(move));
 			if (maxEval < eval) {
 				maxEval = eval;
 				highestMove.clear();
@@ -105,85 +113,85 @@ public class PLZ implements Ai {
 				highestMove.add(move);
 			}
 		}
-		return highestMove;
+		return highestMove.get(0);
 	}
 
 
 	//return the best move
-	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
-		Move bestMove;
-		int score = 0;
-		Random ran = new Random();
-		List<Move> optimalMoves = getOptimalMoves(board, depth);
-		List<Move> noAdjacent = checkAdjacent(board, optimalMoves);
-		List<Move> highestScore = new ArrayList<>();
-		List<Move> finalMoves = new ArrayList<>();
-		boolean checkDoubleMove = false;
-		//if mrX is cornered by detectives, choose any move
-		if(noAdjacent.isEmpty()){
-			int randomIndex = ran.nextInt(optimalMoves.size());
-			bestMove = optimalMoves.get(randomIndex);
-		}
-		else{
-			for (Move move : noAdjacent) {
-				int thisScore = calculateMoveDistance(board, move);
-				//if it's new highest score
-				if(thisScore > score){
-					score = thisScore;
-					highestScore.clear();
-					highestScore.add(move);
-				}
-				//if the score is equal to the current highest score
-				else if(thisScore == score){
-					highestScore.add(move);
-				}
-			}
-			//check if there are only double moves in highestScore
-			if(calculateMoveDistance(board, highestScore.get(0)) == 0){
-				checkDoubleMove = true;
-			}
-			int score2 = 0;
-			/*If there are more than one possible moves, randomly choose among those moves
-			  and contains only Single moves*/
-			if(highestScore.size() > 1 && !checkDoubleMove){
-				for(Move move : highestScore) {
-					int thisScore2 = transportationCost(board, updateTicket(move)) + graph.adjacentNodes(updateLocation(move)).size();
-					//if any score is higher than score2 clear finalMoves and add the new move
-					if (thisScore2 > score2){
-						score2 = thisScore2;
-						finalMoves.clear();
-						finalMoves.add(move);
-					}
-					//if same score, add it to the finalMoves
-					else if(thisScore2 == score2){
-						finalMoves.add(move);
-					}
-				}
-				int randomIndex = ran.nextInt(finalMoves.size());
-				bestMove = finalMoves.get(randomIndex);
-			}
-			//if there are no other moves than double moves, return the farthest one from the detectives
-			else if(checkDoubleMove){
-				int score3 = 0;
-				//get the move with the highest score
-				for(Move move: highestScore){
-					int doubleScore = calculateDistance(board, move, graph);
-					if(score3 < doubleScore){
-						score3 = doubleScore;
-						finalMoves.clear();
-						finalMoves.add(move);
-					}
-					else if(score3 == doubleScore){
-						finalMoves.add(move);
-					}
-				}
-				int randomIndex = ran.nextInt(finalMoves.size());
-				bestMove = finalMoves.get(randomIndex);
-			}
-			else bestMove = highestScore.get(0);
-		}
-		return bestMove;
-	}
+//	private Move mrXBestMove(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, Board board, int depth) {
+//		Move bestMove;
+//		int score = 0;
+//		Random ran = new Random();
+//		List<Move> optimalMoves = getOptimalMoves(board, depth);
+//		List<Move> noAdjacent = checkAdjacent(board, optimalMoves);
+//		List<Move> highestScore = new ArrayList<>();
+//		List<Move> finalMoves = new ArrayList<>();
+//		boolean checkDoubleMove = false;
+//		//if mrX is cornered by detectives, choose any move
+//		if(noAdjacent.isEmpty()){
+//			int randomIndex = ran.nextInt(optimalMoves.size());
+//			bestMove = optimalMoves.get(randomIndex);
+//		}
+//		else{
+//			for (Move move : noAdjacent) {
+//				int thisScore = calculateMoveDistance(board, move);
+//				//if it's new highest score
+//				if(thisScore > score){
+//					score = thisScore;
+//					highestScore.clear();
+//					highestScore.add(move);
+//				}
+//				//if the score is equal to the current highest score
+//				else if(thisScore == score){
+//					highestScore.add(move);
+//				}
+//			}
+//			//check if there are only double moves in highestScore
+//			if(calculateMoveDistance(board, highestScore.get(0)) == 0){
+//				checkDoubleMove = true;
+//			}
+//			int score2 = 0;
+//			/*If there are more than one possible moves, randomly choose among those moves
+//			  and contains only Single moves*/
+//			if(highestScore.size() > 1 && !checkDoubleMove){
+//				for(Move move : highestScore) {
+//					int thisScore2 = transportationCost(board, updateTicket(move)) + graph.adjacentNodes(updateLocation(move)).size();
+//					//if any score is higher than score2 clear finalMoves and add the new move
+//					if (thisScore2 > score2){
+//						score2 = thisScore2;
+//						finalMoves.clear();
+//						finalMoves.add(move);
+//					}
+//					//if same score, add it to the finalMoves
+//					else if(thisScore2 == score2){
+//						finalMoves.add(move);
+//					}
+//				}
+//				int randomIndex = ran.nextInt(finalMoves.size());
+//				bestMove = finalMoves.get(randomIndex);
+//			}
+//			//if there are no other moves than double moves, return the farthest one from the detectives
+//			else if(checkDoubleMove){
+//				int score3 = 0;
+//				//get the move with the highest score
+//				for(Move move: highestScore){
+//					int doubleScore = calculateDistance(board, move, graph);
+//					if(score3 < doubleScore){
+//						score3 = doubleScore;
+//						finalMoves.clear();
+//						finalMoves.add(move);
+//					}
+//					else if(score3 == doubleScore){
+//						finalMoves.add(move);
+//					}
+//				}
+//				int randomIndex = ran.nextInt(finalMoves.size());
+//				bestMove = finalMoves.get(randomIndex);
+//			}
+//			else bestMove = highestScore.get(0);
+//		}
+//		return bestMove;
+//	}
 
 
 	//a function that checks whether this move is safe or not
@@ -287,7 +295,6 @@ public class PLZ implements Ai {
 		int size;
 		List<List<Integer>> shortPath = new ArrayList<>();
 		List<List<Integer>> allPath = new ArrayList<>();
-		Board update = updatedBoard(board, move);
 		//calculate the distance from each detective to mrX's expected location
 		for (Integer detectiveLocation : detectivesLocation) {
 			Map<Integer, Integer> distance = new HashMap<>();
@@ -311,7 +318,7 @@ public class PLZ implements Ai {
 					Integer neighbour = edge.adjacentNode(currentNode);
 					int newDistance = distance.get(currentNode);
 					if (newDistance < distance.get(neighbour)) {
-						distance.put(neighbour, transportationCost(update, updateTicket(move)));
+						distance.put(neighbour, transportationCost(board, updateTicket(move)));
 						preNode.replace(neighbour, currentNode);
 						queue.remove(neighbour);
 						queue.add(neighbour);
@@ -331,6 +338,7 @@ public class PLZ implements Ai {
 			}
 			//if not add every detective's path on the list
 			allPath.add(path);
+			System.out.println(path);
 		}
 		//calculate the total size of the paths
 		size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
