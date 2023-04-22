@@ -34,7 +34,6 @@ public class PLZ implements Ai {
 		return ((Board.GameState) board).advance(move);
 	}
 
-	//MINIMAX//
 //MINIMAX//
 	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, boolean checkMrX) {
 		Board.GameState gameState = (Board.GameState) board;
@@ -44,7 +43,8 @@ public class PLZ implements Ai {
 		if (checkMrX) {
 			int maxEval = Integer.MIN_VALUE;
 			for (Move child : board.getAvailableMoves().asList()) {
-				int eval = minimax(board, child, depth - 1, alpha, beta, false);
+				Board updated = updatedBoard(board, child);
+				int eval = minimax(updated, child, depth - 1, alpha, beta, false);
 				maxEval = Math.max(maxEval, eval);
 				alpha = Math.max(alpha, maxEval);
 				if (beta <= alpha) {
