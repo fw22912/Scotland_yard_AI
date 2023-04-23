@@ -34,16 +34,12 @@ public class PLZ implements Ai {
 		return ((Board.GameState) board).advance(move);
 	}
 
-	private boolean checkMrX(Move move){
-		return move.commencedBy().isMrX();
-	}
-
-//MINIMAX//
-	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, boolean checkMrX) {
+	//MINIMAX//
+	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, boolean checkMrX) {//TODO minimax
 		Board.GameState gameState = (Board.GameState) board;
 		if (depth == 0 || !board.getWinner().isEmpty()) {
 //			System.out.println("depth 0 여기 오나요 제발");
-			return calculateDistance(board, move, gameState.getSetup().graph);
+			return calculateMoveDistance(board, move);
 		}
 		if (checkMrX) {
 			int maxEval = Integer.MIN_VALUE;
@@ -58,8 +54,7 @@ public class PLZ implements Ai {
 				}
 			}
 			return maxEval;
-		}
-		else {
+		} else {
 			int minEval = Integer.MAX_VALUE;
 			for (Move child : board.getAvailableMoves().asList()) {
 				Board updated = updatedBoard(board, child);
@@ -76,13 +71,15 @@ public class PLZ implements Ai {
 	}
 
 	//a method that returns the score based on the type of the move
-	private Integer calculateMoveDistance(Board board, Move move){
+	private Integer calculateMoveDistance(Board board, Move move) {
 		return move.accept(new Move.Visitor<>() {
 			final Board.GameState gameState = (Board.GameState) board;
+
 			@Override
 			public Integer visit(Move.SingleMove move) {
 				return calculateDistance(board, move, gameState.getSetup().graph);
 			}
+
 			//if it is double move, set it to the default value 0 whenever there are any possible singleMoves
 			@Override
 			public Integer visit(Move.DoubleMove move) {
@@ -91,25 +88,36 @@ public class PLZ implements Ai {
 		});
 	}
 
+	private Integer evaluate(Board board) {
+		int score = 0;
+		if (!board.getWinner().isEmpty()) {
+			if (board.getWinner().contains(Piece.MrX.MRX)) {
+				score = 100;
+			} else {
+				return score = -100;
+			}
+		}
+//		else if
+		return score;
+	}
 
 	//chooses the best move for MrX
-//	private List<Move> getOptimalMoves(Board board, int depth) {
-	private Move getOptimalMoves(Board board, int depth) {
+	private Move getOptimalMoves(Board board, int depth) { //TODO getOptimalMoves
 		int maxEval = Integer.MIN_VALUE;
 		int alpha = Integer.MIN_VALUE;
 		int beta = Integer.MAX_VALUE;
 		List<Move> highestMove = new ArrayList<>();
+		List<Move> noAdjacent = checkAdjacent(board, board.getAvailableMoves().asList());
 		//iterate through all the available moves and get a move with the highest minimax score
-		for (Move move : board.getAvailableMoves()) {
-//			Board updated = updatedBoard(board, move);
+		for (Move move : noAdjacent) {
+			Board updated = updatedBoard(board, move);
 			//do minimax with updatedBoard after designated move
-			int eval = minimax(board, move, depth - 1, alpha, beta, checkMrX(move));
+			int eval = minimax(updated, move, depth - 1, alpha, beta, false);
 			if (maxEval < eval) {
 				maxEval = eval;
 				highestMove.clear();
 				highestMove.add(move);
-			}
-			else if (maxEval == eval) {
+			} else if (maxEval == eval) {
 				highestMove.add(move);
 			}
 		}
@@ -122,7 +130,7 @@ public class PLZ implements Ai {
 //		Move bestMove;
 //		int score = 0;
 //		Random ran = new Random();
-//		List<Move> optimalMoves = getOptimalMoves(board, depth);
+//		List<Move> optimalMoves = board.getAvailableMoves().asList();
 //		List<Move> noAdjacent = checkAdjacent(board, optimalMoves);
 //		List<Move> highestScore = new ArrayList<>();
 //		List<Move> finalMoves = new ArrayList<>();
@@ -196,12 +204,12 @@ public class PLZ implements Ai {
 
 	//a function that checks whether this move is safe or not
 	//it returns a list of the nodes that are not adjacent to detectives' locations
-	private List<Move> checkAdjacent(Board board, List<Move> bestMoves){
+	private List<Move> checkAdjacent(Board board, List<Move> bestMoves) {
 		List<Move> possible = new ArrayList<>();
-		for(Move move : bestMoves){
+		for (Move move : bestMoves) {
 			Set<Integer> occupation = detectiveAdjacent(move, board);
 			//if there are no detectives around add the move to the list
-			if(occupation.add(updateLocation(move))){
+			if (occupation.add(updateLocation(move))) {
 				possible.add(move);
 			}
 		}
@@ -211,11 +219,11 @@ public class PLZ implements Ai {
 
 	//HELPER METHODS STARTS HERE//
 	//a helper method that returns all adjacent nodes from detectives' current location
-	private Set<Integer> detectiveAdjacent(Move move, Board board){
+	private Set<Integer> detectiveAdjacent(Move move, Board board) {
 		Board newBoard = updatedBoard(board, move);
 		Set<Integer> availableLocation = new HashSet<>();
 		//places where detectives can go
-		for(Move move2 : newBoard.getAvailableMoves()){
+		for (Move move2 : newBoard.getAvailableMoves()) {
 			availableLocation.add(updateLocation(move2));
 		}
 		return availableLocation;
@@ -241,6 +249,7 @@ public class PLZ implements Ai {
 			public Integer visit(Move.SingleMove move) {
 				return move.destination;
 			}
+
 			@Override
 			public Integer visit(Move.DoubleMove move) {
 				return move.destination2;
@@ -250,14 +259,16 @@ public class PLZ implements Ai {
 
 
 	//helper method that returns used tickets for the move
-	public static List<ScotlandYard.Ticket> updateTicket(Move move){
+	public static List<ScotlandYard.Ticket> updateTicket(Move move) {
 		return move.accept(new Move.Visitor<>() {
 			final List<ScotlandYard.Ticket> newTicket = new ArrayList<>();
+
 			@Override
 			public List<ScotlandYard.Ticket> visit(Move.SingleMove move) {
 				newTicket.add(move.ticket);
 				return newTicket;
 			}
+
 			@Override
 			public List<ScotlandYard.Ticket> visit(Move.DoubleMove move) {
 				newTicket.add(move.ticket1);
@@ -269,18 +280,21 @@ public class PLZ implements Ai {
 
 
 	//a helper method that weights transportations
-	private Integer transportationCost(Board board, List<ScotlandYard.Ticket> tickets) {
+	//TODO transportationCost
+	private Integer transportationCost(Board board, Integer destination, Integer source, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
 		List<LogEntry> mrXLog = board.getMrXTravelLog();
 		int ticketVal = 0;
 		//returning different ticket values by transportation respectively
-		for(ScotlandYard.Ticket ticket : tickets){
-			if(ticket.equals(ScotlandYard.Ticket.TAXI)) ticketVal += 2;
-			if(ticket.equals(ScotlandYard.Ticket.BUS)) ticketVal += 4;
-			if(ticket.equals(ScotlandYard.Ticket.UNDERGROUND)) ticketVal += 8;
-			if (mrXLog.size() != 0){
-				if(ticket.equals(ScotlandYard.Ticket.SECRET)) {
+		for (ScotlandYard.Transport T : graph.edgeValueOrDefault(source, destination, ImmutableSet.of())) {
+			if (T.requiredTicket().equals(ScotlandYard.Ticket.TAXI)) ticketVal += 2;
+			if (T.requiredTicket().equals(ScotlandYard.Ticket.BUS)) ticketVal += 4;
+			if (T.requiredTicket().equals(ScotlandYard.Ticket.UNDERGROUND)) ticketVal += 8;
+			if (mrXLog.size() != 0) {
+				if (T.requiredTicket().equals(ScotlandYard.Ticket.SECRET)) {
 					//if mrX's log size is larger than 0 and is after reveal
-					if(board.getSetup().moves.get(mrXLog.size() - 1)) {ticketVal += 20;}
+					if (board.getSetup().moves.get(mrXLog.size() - 1)) {
+						ticketVal += 20;
+					}
 				}
 			}
 		}
@@ -288,9 +302,9 @@ public class PLZ implements Ai {
 	}
 	//HELPER METHODS ENDS HERE//
 
-
 	//Scoring method, returns the distance from the detectives' location to mrX's destination
-	private Integer calculateDistance(Board board, Move move, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
+	//TODO Dijkstra
+	private Integer calculateDistance(Board board, Move mrXMove, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
 		List<Integer> detectivesLocation = getDetectivesLocation(board);
 		int size;
 		List<List<Integer>> shortPath = new ArrayList<>();
@@ -309,17 +323,18 @@ public class PLZ implements Ai {
 
 			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
 			queue.add(detectiveLocation);
-			int mrXLocation = updateLocation(move);
+			int mrXLocation = updateLocation(mrXMove);
 			//using Dijkstra's algorithm to find the shortest path from the detective to mrX
 			while (!queue.isEmpty()) {
 				Integer currentNode = queue.poll();
 				if (currentNode.equals(mrXLocation)) break;
 				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
 					Integer neighbour = edge.adjacentNode(currentNode);
-					int newDistance = distance.get(currentNode);
+					Integer weight = transportationCost(board, mrXLocation, currentNode, graph);
+					int newDistance = distance.get(currentNode) + weight;
 					if (newDistance < distance.get(neighbour)) {
-						distance.put(neighbour, transportationCost(board, updateTicket(move)));
-						preNode.replace(neighbour, currentNode);
+						distance.put(neighbour, newDistance);
+						preNode.put(neighbour, currentNode);
 						queue.remove(neighbour);
 						queue.add(neighbour);
 					}
@@ -328,20 +343,19 @@ public class PLZ implements Ai {
 			//store the path from detective's location to mrX's expected location
 			List<Integer> path = new ArrayList<>();
 			Integer node = mrXLocation;
-			while(node != null){
+			while (node != null) {
 				path.add(node);
 				node = preNode.get(node);
 			}
 			//focus on the detectives who are close enough to consider
-			if(path.size() < 5){
+			if (path.size() < 5) {
 				shortPath.add(path);
 			}
-			//if not add every detective's path on the list
+			//add every detective's path on the list
 			allPath.add(path);
-			System.out.println(path);
 		}
 		//calculate the total size of the paths
-		size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
+		size = shortPath.stream().mapToInt(List::size).sum() + allPath.stream().mapToInt(List::size).sum();
 		return size;
 	}
 }
