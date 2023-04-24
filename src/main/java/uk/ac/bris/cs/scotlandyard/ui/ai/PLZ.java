@@ -102,6 +102,7 @@ public class PLZ implements Ai {
 		return bestMove;
 	}
 
+
 	//returns filtered Single or Double
 	//if single exists, return only single and both otherwise
 	private List<Move> filterSingleDouble(Board board, List<Move> scoredMoves){
