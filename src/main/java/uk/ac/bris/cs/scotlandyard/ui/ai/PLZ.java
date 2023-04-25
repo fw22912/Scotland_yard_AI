@@ -69,14 +69,17 @@ public class PLZ implements Ai {
 		Random ran = new Random();
 		Board.GameState gameState = (Board.GameState) board;
 		Move bestMove;
+		Set<Integer> destinations = returnAllDestinations(highestMoves);
 		List<Move> scoredMoves = new ArrayList<>();
 		System.out.println("HIGHEST MOVE: " + highestMoves);
 		int maxScore = Integer.MIN_VALUE;
+		//추가!!//
 		if(highestMoves.size() == 1) {
 			bestMove = highestMoves.get(0);
 		}
 		else{
 			for (Move scoredMove : highestMoves) {
+//				destination.add(updateLocation(scoredMove));
 				int score2 = transportationCost(board, updateTicket(scoredMove))
 						+ gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size()
 						- detectivesNearby(board, scoredMove);
@@ -84,12 +87,29 @@ public class PLZ implements Ai {
 				System.out.println("ADJACENTNODES SCORE: " + gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size());
 				System.out.println("NEARBYDETECTIVE SCORE: " + detectivesNearby(board, scoredMove));
 				System.out.println("MOVE: " + scoredMove + " score: " + score2);
-				if(score2 > maxScore){
+				System.out.println("----------------------------------------------------");
+				if (transportationCost(board, updateTicket(scoredMove)) == 200) {
+					if (destinations.size() > 1) {
+						int score3 = gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size()
+								- detectivesNearby(board, scoredMove);
+						if (score3 > maxScore) {
+							scoredMoves.clear();
+							scoredMoves.add(scoredMove);
+							maxScore = score3;
+						}
+						else if (score3 == maxScore) {
+							scoredMoves.add(scoredMove);
+						}
+					}
+				}
+				if (score2 > maxScore) {
 					scoredMoves.clear();
 					scoredMoves.add(scoredMove);
 					maxScore = score2;
 				}
-				else if(score2 == maxScore) {scoredMoves.add(scoredMove);}
+				else if (score2 == maxScore) {
+					scoredMoves.add(scoredMove);
+				}
 			}
 			System.out.println("SCOREDMOVES: " + scoredMoves);
 			//NEW LOOP
@@ -97,8 +117,7 @@ public class PLZ implements Ai {
 			if (scoredMoves.size() == 1) {bestMove = scoredMoves.get(0);}
 			else {
 				finalMove.addAll(filterSingleDouble(board, scoredMoves));
-				int ranFinal = ran.nextInt(finalMove.size());
-				bestMove = finalMove.get(ranFinal);
+				bestMove = finalMove.get(0);
 				System.out.println("FINALMOVES: " + finalMove);
 			}
 		}
@@ -106,6 +125,14 @@ public class PLZ implements Ai {
 		return bestMove;
 	}
 
+	//추가!!
+	private Set<Integer> returnAllDestinations(List<Move> highestMoves){
+		Set<Integer> destination = new HashSet<>();
+		for(Move move : highestMoves){
+			destination.add(updateLocation(move));
+		}
+		return destination;
+	}
 
 	//returns filtered Single or Double
 	//if single exists, return only single and both otherwise
@@ -366,7 +393,7 @@ public class PLZ implements Ai {
 						//if mrX's log size is larger than 0 and is after reveal
 						if(board.getSetup().moves.get(mrXLog.size() - 1)) {
 //							System.out.println("SIZE: " + mrXLog.size());
-							ticketVal += Integer.MAX_VALUE;}
+							ticketVal += 200;}
 					}
 				}
 			}
