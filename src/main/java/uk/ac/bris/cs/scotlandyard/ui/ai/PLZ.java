@@ -33,92 +33,96 @@ public class PLZ implements Ai {
 		int alpha = Integer.MIN_VALUE;
 		int beta = Integer.MAX_VALUE;
 		int depth = 3;
-		List<Move> noAdjacent = checkAdjacent(board, board.getAvailableMoves().asList());
-		List<Move> highestMoves = new ArrayList<>();
-		List<Move> availableMoves = new ArrayList<>();
+		List<Move> availableMoves = board.getAvailableMoves().asList();
+		List<Move> optimalMoves = new ArrayList<>();
+//		List<Move> availableMoves = new ArrayList<>();
 		Move bestMove = null;
 
-		Random ran = new Random();
-		if (noAdjacent.isEmpty()) {
-			int ranIndex = ran.nextInt(board.getAvailableMoves().size());
-			System.out.println("=====================================NO ADJACENT===============================================");
-			availableMoves.addAll(board.getAvailableMoves().asList());
-			return availableMoves.get(0);
-		}
-		else {
 			//iterate through all the available moves and get a move with the highest minimax score
-			for (Move move : noAdjacent) {
+			for (Move move : availableMoves) {
 				Board updated = updatedBoard(board, move);
 				//do minimax with updatedBoard after designated move
 				int eval = minimax(updated, move, depth - 1, alpha, beta);
 				if (maxEval < eval) {
 					maxEval = eval;
-					highestMoves.clear();
-					highestMoves.add(move);
+					optimalMoves.clear();
+					optimalMoves.add(move);
 				} else if (maxEval == eval) {
-					highestMoves.add(move);
+					optimalMoves.add(move);
 				}
 			}
-		}
-		return returnBestMove(board, highestMoves);
+		return returnBestMove(board, optimalMoves);
 	}
 
 
 
-	private Move returnBestMove(Board board, List<Move> highestMoves){
-		Random ran = new Random();
-		Board.GameState gameState = (Board.GameState) board;
+	private Move returnBestMove(Board board, List<Move> optimalMoves){
+//		Random ran = new Random();
 		Move bestMove;
-		Set<Integer> destinations = returnAllDestinations(highestMoves);
-		List<Move> scoredMoves = new ArrayList<>();
-		System.out.println("HIGHEST MOVE: " + highestMoves);
+		Board.GameState gameState = (Board.GameState) board;
+		Set<Integer> destinations = returnAllDestinations(optimalMoves);
+		List<Move> highestMoves = new ArrayList<>();
+		System.out.println("OPTIMALMOVE: " + optimalMoves);
 		int maxScore = Integer.MIN_VALUE;
-		//추가!!//
-		if(highestMoves.size() == 1) {
-			bestMove = highestMoves.get(0);
+
+		if(optimalMoves.size() == 1) {
+			bestMove = optimalMoves.get(0);
 		}
 		else{
-			for (Move scoredMove : highestMoves) {
+			for (Move optimalMove : optimalMoves) {
 //				destination.add(updateLocation(scoredMove));
-				int score2 = transportationCost(board, updateTicket(scoredMove))
-						+ gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size()
-						- detectivesNearby(board, scoredMove);
-				System.out.println("TRANSPORTATION SCORE: " + transportationCost(board, updateTicket(scoredMove)));
-				System.out.println("ADJACENTNODES SCORE: " + gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size());
-				System.out.println("NEARBYDETECTIVE SCORE: " + detectivesNearby(board, scoredMove));
-				System.out.println("MOVE: " + scoredMove + " score: " + score2);
+				int score2 = transportationCost(board, updateTicket(optimalMove))
+						+ gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
+						- detectivesNearby(board, optimalMove);
+				//추가!!!
+//						+ adjacentScore(board, optimalMoves);
+				System.out.println("TRANSPORTATION SCORE: " + transportationCost(board, updateTicket(optimalMove)));
+				System.out.println("ADJACENTNODES SCORE: " + gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size());
+				System.out.println("NEARBYDETECTIVE SCORE: " + detectivesNearby(board, optimalMove));
+				System.out.println("MOVE: " + optimalMove + " score: " + score2);
 				System.out.println("----------------------------------------------------");
-				if (transportationCost(board, updateTicket(scoredMove)) == 200) {
+				if (transportationCost(board, updateTicket(optimalMove)) == 200) {
 					if (destinations.size() > 1) {
-						int score3 = gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size()
-								- detectivesNearby(board, scoredMove);
+						int score3 = gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
+								- detectivesNearby(board, optimalMove);
 						if (score3 > maxScore) {
-							scoredMoves.clear();
-							scoredMoves.add(scoredMove);
+							highestMoves.clear();
+							highestMoves.add(optimalMove);
 							maxScore = score3;
 						}
 						else if (score3 == maxScore) {
-							scoredMoves.add(scoredMove);
+							highestMoves.add(optimalMove);
 						}
 					}
 				}
 				if (score2 > maxScore) {
-					scoredMoves.clear();
-					scoredMoves.add(scoredMove);
+					highestMoves.clear();
+					highestMoves.add(optimalMove);
 					maxScore = score2;
 				}
 				else if (score2 == maxScore) {
-					scoredMoves.add(scoredMove);
+					highestMoves.add(optimalMove);
 				}
 			}
-			System.out.println("SCOREDMOVES: " + scoredMoves);
-			//NEW LOOP
-			List<Move> finalMove = new ArrayList<>();
-			if (scoredMoves.size() == 1) {bestMove = scoredMoves.get(0);}
+			System.out.println("HIGHESTMOVES: " + highestMoves);
+
+			List<Move> noAdjacentMoves = checkAdjacent(board, highestMoves);
+			System.out.println("NOADJACENTMOVES: " + noAdjacentMoves);
+			List<Move> alternativeMoves = new ArrayList<>();
+			List<Move> finalMoves = new ArrayList<>();
+			if (noAdjacentMoves.isEmpty()) {
+				alternativeMoves.addAll(filterSingleDouble(board, highestMoves));
+				bestMove = alternativeMoves.get(0);
+			}
 			else {
-				finalMove.addAll(filterSingleDouble(board, scoredMoves));
-				bestMove = finalMove.get(0);
-				System.out.println("FINALMOVES: " + finalMove);
+				//NEW LOOP
+				if (noAdjacentMoves.size() == 1) {
+					bestMove = noAdjacentMoves.get(0);
+				} else {
+					finalMoves.addAll(filterSingleDouble(board, noAdjacentMoves));
+					bestMove = finalMoves.get(0);
+					System.out.println("FINALMOVES: " + finalMoves);
+				}
 			}
 		}
 		System.out.println("BESTMOVE: " + bestMove);
@@ -275,10 +279,10 @@ public class PLZ implements Ai {
 
 		if (!board.getWinner().isEmpty()) {
 			if (board.getWinner().contains(Piece.MrX.MRX)) {
-				score = +500;
+				score = 1000;
 			}
 			else {
-				score = -500;
+				score = -1000;
 			}
 		}
 		else {
@@ -287,6 +291,20 @@ public class PLZ implements Ai {
 		return score;
 	}
 
+//================================================================CHANGED FROM HERE===================================================================
+	//a function that checks whether this move is safe or not
+	//it returns a list of the nodes that are not adjacent to detectives' locations]//수정
+	private boolean checkAdjacentBool(Board board, List<Move> bestMoves) {
+		List<Move> possible = new ArrayList<>();
+		for (Move move : bestMoves) {
+			Set<Integer> occupation = detectiveAdjacent(move, board);
+			//if there are no detectives around add the move to the list
+			if (!occupation.add(updateLocation(move))) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	//a function that checks whether this move is safe or not
 	//it returns a list of the nodes that are not adjacent to detectives' locations
@@ -301,6 +319,15 @@ public class PLZ implements Ai {
 		}
 		return possible;
 	}
+
+	//추가!!!
+	private Integer adjacentScore(Board board, List<Move> bestMoves){
+		boolean check = checkAdjacentBool(board, bestMoves);
+		if(check) return 60;
+		else return 0;
+	}
+
+//================================================================CHANGED TILL HERE===================================================================
 
 
 	//HELPER METHODS STARTS HERE//
