@@ -40,10 +40,9 @@ public class PLZ implements Ai {
 
 		Random ran = new Random();
 		if (noAdjacent.isEmpty()) {
-			System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NO ADJACENT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			int ranIndex = ran.nextInt(board.getAvailableMoves().size());
+			System.out.println("=====================================NO ADJACENT===============================================");
 			availableMoves.addAll(board.getAvailableMoves().asList());
-			System.out.println(availableMoves);
-			return availableMoves.get(0);
 		}
 		else {
 			//iterate through all the available moves and get a move with the highest minimax score
@@ -79,12 +78,11 @@ public class PLZ implements Ai {
 			for (Move scoredMove : highestMoves) {
 				int score2 = transportationCost(board, updateTicket(scoredMove))
 						+ gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size()
-						- DetectivesNearby(board, scoredMove);
+						- detectivesNearby(board, scoredMove);
 				System.out.println("TRANSPORTATION SCORE: " + transportationCost(board, updateTicket(scoredMove)));
 				System.out.println("ADJACENTNODES SCORE: " + gameState.getSetup().graph.adjacentNodes(updateLocation(scoredMove)).size());
-				System.out.println("NEARBYDETECTIVE SCORE: " + DetectivesNearby(board, scoredMove));
+				System.out.println("NEARBYDETECTIVE SCORE: " + detectivesNearby(board, scoredMove));
 				System.out.println("MOVE: " + scoredMove + " score: " + score2);
-				System.out.println("------------------------------------------------------------");
 				if(score2 > maxScore){
 					scoredMoves.clear();
 					scoredMoves.add(scoredMove);
@@ -140,13 +138,13 @@ public class PLZ implements Ai {
 
 
 	//returns the number of the detectives that are located in the adjacent X 2 nodes
-	private Integer DetectivesNearby(Board board, Move move){
-//		List<Integer> listAdjacent = adjacentNodes(board, move);
+	private Integer detectivesNearby(Board board, Move move){
+		List<Integer> listAdjacent = adjacentNodes(board, move);
 		List<Integer> detectivesLocation = getDetectivesLocation(board);
 		AtomicInteger count = new AtomicInteger();
 
 		for(int location : detectivesLocation){
-			detectivesLocation.forEach(place -> {
+			listAdjacent.forEach(place -> {
 				if (place == location) count.getAndIncrement();
 			});
 		}
@@ -155,6 +153,7 @@ public class PLZ implements Ai {
 	}
 
 
+	//getting adjacent nodes from the board after the move and the adjacent nodes from there
 	private List<Integer> adjacentNodes(Board board, Move move){
 		Board.GameState gameState = (Board.GameState) board;
 		Board updated = updatedBoard(board, move);
@@ -172,6 +171,7 @@ public class PLZ implements Ai {
 		return new ArrayList<>(farNodes);
 	}
 
+
 	//a method that return an updated board after particular move
 	private Board updatedBoard(Board board, Move move) {
 		return ((Board.GameState) board).advance(move);
@@ -188,7 +188,7 @@ public class PLZ implements Ai {
 //			System.out.println("depth 0 여기 오나요 제발");
 //			System.out.println("MOVE: " + move + " SCORE: " + calculateMoveDistance(board, move));
 //			return calculateMoveDistance(board, move);
-			System.out.println("MOVE: " + move + " SCORE: " + evaluate(board, move));
+			System.out.println("MOVE: " + move + " SCORE: " + calculateDistance(getDetectivesLocation(board), updateLocation(move), gameState.getSetup().graph));
 			return evaluate(board, move);
 		}
 		if (moves.get(0).commencedBy() == Piece.MrX.MRX) {
@@ -361,7 +361,7 @@ public class PLZ implements Ai {
 				case BUS -> ticketVal += 4;
 				case UNDERGROUND -> ticketVal += 8;
 				case SECRET -> {
-					if (mrXLog.size() != 0 && ticket.equals(ScotlandYard.Ticket.SECRET)){
+					if (mrXLog.size() != 0){
 						//if mrX's log size is larger than 0 and is after reveal
 						if(board.getSetup().moves.get(mrXLog.size() - 1)) {
 //							System.out.println("SIZE: " + mrXLog.size());
