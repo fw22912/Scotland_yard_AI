@@ -43,6 +43,7 @@ public class PLZ implements Ai {
 			int ranIndex = ran.nextInt(board.getAvailableMoves().size());
 			System.out.println("=====================================NO ADJACENT===============================================");
 			availableMoves.addAll(board.getAvailableMoves().asList());
+			return availableMoves.get(0);
 		}
 		else {
 			//iterate through all the available moves and get a move with the highest minimax score
