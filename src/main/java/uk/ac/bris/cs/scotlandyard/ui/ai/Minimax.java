@@ -35,6 +35,7 @@ public class Minimax extends MORIARTY{
         this.move = move;
         this.originalMove = originalMove;
         this.depth = depth;
+        System.out.println();
         this.startTime = System.currentTimeMillis();
     }
 
