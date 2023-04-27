@@ -109,8 +109,6 @@ public class Moriarty implements Ai {
     }
 
 
-    //HELPER METHOD STARTS FROM HERE//
-
     //returns filtered Single or Double
     //if single exists, return only single and both otherwise
     private List<Move> filterSingleDouble(Board board, List<Move> scoredMoves){
@@ -245,6 +243,7 @@ public class Moriarty implements Ai {
         return check;
     }
 
+    //HELPER METHODS END HERE//
 
 
     //MINIMAX//
@@ -371,7 +370,6 @@ public class Moriarty implements Ai {
 
 
 
-
     //HELPER METHODS STARTS HERE//
     //a helper method that returns all adjacent nodes from detectives' current location
     private Set<Integer> detectiveAdjacent(Move move, Board board) {
@@ -384,9 +382,6 @@ public class Moriarty implements Ai {
         return availableLocation;
     }
 
-
-
-    //helper method that returns the destination of the move
 
 
 
