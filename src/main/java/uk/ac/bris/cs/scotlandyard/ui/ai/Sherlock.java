@@ -227,8 +227,8 @@ public class Sherlock implements Ai {
                 Board updated = updatedBoard(board, child);
 //				System.out.println("체크미스터엑스 T 보드업데이트됨");
                 int eval = minimax(updated, child, depth - 1, alpha, beta, originalBoard, originalMove);
-                minEval = Math.max(minEval, eval);
-                alpha = Math.max(alpha, minEval);
+                minEval = Math.min(minEval, eval);
+                alpha = Math.min(alpha, minEval);
                 if (beta <= alpha) {
                     break;
                 }
@@ -246,8 +246,8 @@ public class Sherlock implements Ai {
                         Board updated = updatedBoard(board, child);
 //				System.out.println("체크미스터엑스 F 보드업데이트됨");
                         int eval = minimax(updated, move, depth - 1, alpha, beta, originalBoard, originalMove);
-                        maxEval = Math.min(maxEval, eval);
-                        beta = Math.min(maxEval, beta);
+                        maxEval = Math.max(maxEval, eval);
+                        beta = Math.max(maxEval, beta);
                         if (beta <= alpha) {
                             break;
                         }
@@ -261,8 +261,8 @@ public class Sherlock implements Ai {
                         Board updated = updatedBoard(board, child);
 //				System.out.println("체크미스터엑스 F 보드업데이트됨");
                         int eval = minimax(updated, move, depth, alpha, beta, originalBoard, originalMove);
-                        maxEval = Math.min(maxEval, eval);
-                        beta = Math.min(maxEval, beta);
+                        maxEval = Math.max(maxEval, eval);
+                        beta = Math.max(maxEval, beta);
                         if (beta <= alpha) {
                             break;
                         }

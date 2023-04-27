@@ -43,12 +43,12 @@ public class Moriarty implements Ai {
             Board updated = updatedBoard(board, move);
             //do minimax with updatedBoard after designated move
             int eval = minimax(timeoutPair.left(), updated, move, depth - 1, alpha, beta, move, board);
-            System.out.println("Move: " + move + "   EVAL: " + eval);
+            //if new best high value, clear the list and add the move
             if (maxEval < eval) {
                 maxEval = eval;
                 optimalMoves.clear();
                 optimalMoves.add(move);
-            } else if (maxEval == eval) {
+            } else if (maxEval == eval) {  //if same, add the move
                 optimalMoves.add(move);
             }
         }
@@ -58,37 +58,25 @@ public class Moriarty implements Ai {
 
 
     private Move returnBestMove(Board board, List<Move> optimalMoves){
-//		Random ran = new Random();
+        //elements for storing the highest move after evaluation
         Move bestMove;
         Board.GameState gameState = (Board.GameState) board;
         Set<Integer> destinations = returnAllDestinations(optimalMoves);
         List<Move> highestMoves = new ArrayList<>();
         int maxScore = Integer.MIN_VALUE;
 
+        //if only one move, pick it
         if(optimalMoves.size() == 1) {
             bestMove = optimalMoves.get(0);
         }
         else{
             for (Move optimalMove : optimalMoves) {
-//				destination.add(updateLocation(scoredMove));
+                //new score by adding up transportation cost, number of adjacent nodes
+                // and subtracting the num of nearby detectives
                 int score2 = transportationCost(board, updateTicket(optimalMove))
                         + gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
                         - detectivesNearby(board, optimalMove);
-                //추가!!!
-                if (transportationCost(board, updateTicket(optimalMove)) == 200) {
-                    if (destinations.size() > 1) {
-                        int score3 = gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
-                                - detectivesNearby(board, optimalMove);
-                        if (score3 > maxScore) {
-                            highestMoves.clear();
-                            highestMoves.add(optimalMove);
-                            maxScore = score3;
-                        }
-                        else if (score3 == maxScore) {
-                            highestMoves.add(optimalMove);
-                        }
-                    }
-                }
+                //find the highest score and add it to the list
                 if (score2 > maxScore) {
                     highestMoves.clear();
                     highestMoves.add(optimalMove);
@@ -99,18 +87,26 @@ public class Moriarty implements Ai {
                 }
             }
 
+            //new elements for checking if there are no adjacent detectives
+            //in the neighbouring nodes after MrX has moved
+            //run checkAdjacent which only returns the moves that are safe
             List<Move> noAdjacentMoves = checkAdjacent(board, highestMoves);
             List<Move> alternativeMoves = new ArrayList<>();
             List<Move> finalMoves = new ArrayList<>();
+
+            //if no such move, filter the moves
+            //if single and double both available, choose from only single moves
             if (noAdjacentMoves.isEmpty()) {
                 alternativeMoves.addAll(filterSingleDouble(board, highestMoves));
                 bestMove = alternativeMoves.get(0);
             }
             else {
-                //NEW LOOP
+                //if only one move, return
                 if (noAdjacentMoves.size() == 1) {
                     bestMove = noAdjacentMoves.get(0);
-                } else {
+                }
+                //if not filter moves and add, choose the first one
+                else {
                     finalMoves.addAll(filterSingleDouble(board, noAdjacentMoves));
                     bestMove = finalMoves.get(0);
                 }
@@ -119,7 +115,31 @@ public class Moriarty implements Ai {
         return bestMove;
     }
 
-    //추가!!
+
+    //HELPER METHOD STARTS FROM HERE//
+
+    //returns filtered Single or Double
+    //if single exists, return only single and both otherwise
+    private List<Move> filterSingleDouble(Board board, List<Move> scoredMoves){
+        int totalVal = valueListMoves(board, scoredMoves);
+        if(totalVal != 0) return getOnlySingle(board, scoredMoves);  //if no double, return only single
+        else return scoredMoves;  //otherwise return all moves
+    }
+
+
+    //filters and returns singleMove only
+    //returns the number of single moves
+    private Integer valueListMoves(Board board, List<Move> scoredMoves){
+        int totalVal = 0;
+        for(Move move : scoredMoves){
+            totalVal += filterDouble(board, move);
+        }
+        return totalVal;
+    }
+
+
+
+    //returns the destination of given list of moves
     private Set<Integer> returnAllDestinations(List<Move> highestMoves){
         Set<Integer> destination = new HashSet<>();
         for(Move move : highestMoves){
@@ -128,16 +148,10 @@ public class Moriarty implements Ai {
         return destination;
     }
 
-    //returns filtered Single or Double
-    //if single exists, return only single and both otherwise
-    private List<Move> filterSingleDouble(Board board, List<Move> scoredMoves){
-        int totalVal = valueListMoves(board, scoredMoves);
-        if(totalVal != 0) return getOnlySingle(board, scoredMoves);
-        else return scoredMoves;
-    }
 
 
-    //filters and returns singleMove only
+
+    //filters only single moves and return them
     private List<Move> getOnlySingle(Board board, List<Move> scoredMoves){
         List<Move> onlySingle = new ArrayList<>();
         for(Move move : scoredMoves) {
@@ -149,49 +163,78 @@ public class Moriarty implements Ai {
     }
 
 
-    //returns the number of single moves
-    private Integer valueListMoves(Board board, List<Move> scoredMoves){
-        int totalVal = 0;
-        for(Move move : scoredMoves){
-            totalVal += filterDouble(board, move);
-        }
-        return totalVal;
+
+    //returns the destination of the move
+    public static Integer updateLocation(Move move) {
+        return move.accept(new Move.Visitor<>() {
+            @Override
+            public Integer visit(Move.SingleMove move) {
+                return move.destination;
+            }
+            @Override
+            public Integer visit(Move.DoubleMove move) {
+                return move.destination2;
+            }
+        });
     }
+
+
+
+    //getting adjacent nodes from the board after the move and the adjacent nodes from there
+    //helper method for detectivesNearby
+    private List<Integer> adjacentNodes(Board board, Move move){
+        Board.GameState gameState = (Board.GameState) board;
+        Board updated = updatedBoard(board, move);
+        List<Move> adjacentMoves = updated.getAvailableMoves().asList();  //all available moves
+        Set<Integer> adjacentNodes = new HashSet<>();
+        Set<Integer> farNodes = new HashSet<>();
+
+        //add all the locations of the available moves
+        for(Move adjacent : adjacentMoves){
+            adjacentNodes.add(updateLocation(adjacent));
+        }
+
+        //add all the adjacent nodes from adjacentNodes
+        for(Integer node : adjacentNodes){
+            farNodes.addAll(gameState.getSetup().graph.adjacentNodes(node));
+        }
+
+        //returning double adjacent nodes of the move
+        return new ArrayList<>(farNodes);
+    }
+
+
+
+    //a helper method that gathers all detectives' current locations
+    private static List<Integer> getDetectivesLocation(Board board) {
+        List<Integer> locations = new ArrayList<>();
+        for (Piece piece : board.getPlayers()) {
+            if (!piece.isMrX()) {
+                locations.add(board.getDetectiveLocation((Piece.Detective) piece).get());
+            }
+        }
+        return locations;
+    }
+
 
 
     //returns the number of the detectives that are located in the adjacent X 2 nodes
     private Integer detectivesNearby(Board board, Move move){
-        List<Integer> listAdjacent = adjacentNodes(board, move);
-        List<Integer> detectivesLocation = getDetectivesLocation(board);
+        List<Integer> listAdjacent = adjacentNodes(board, move);  //list of double adjacent nodes
+        List<Integer> detectivesLocation = getDetectivesLocation(board);    //getting the detectives' location
         AtomicInteger count = new AtomicInteger();
 
+        //increment count by 1 if there are any detectives in the adjacent nodes
         for(int location : detectivesLocation){
             listAdjacent.forEach(place -> {
                 if (place == location) count.getAndIncrement();
             });
         }
-
+        //returns the number of detectives located nearby
         return count.intValue();
     }
 
 
-    //getting adjacent nodes from the board after the move and the adjacent nodes from there
-    private List<Integer> adjacentNodes(Board board, Move move){
-        Board.GameState gameState = (Board.GameState) board;
-        Board updated = updatedBoard(board, move);
-        List<Move> adjacentMoves = updated.getAvailableMoves().asList();
-        Set<Integer> adjacentNodes = new HashSet<>();
-        Set<Integer> farNodes = new HashSet<>();
-
-        for(Move adjacent : adjacentMoves){
-            adjacentNodes.add(updateLocation(adjacent));
-        }
-
-        for(Integer node : adjacentNodes){
-            farNodes.addAll(gameState.getSetup().graph.adjacentNodes(node));
-        }
-        return new ArrayList<>(farNodes);
-    }
 
 
     //a method that return an updated board after particular move
@@ -199,13 +242,20 @@ public class Moriarty implements Ai {
         return ((Board.GameState) board).advance(move);
     }
 
+
+
+    //a helper method that returns a boolean value of
+    // whether there is only one detective left in the remaining
     private boolean checkOnlyOneInRemaining(Board board) {
-        ArrayList<Move> moves = new ArrayList<>(board.getAvailableMoves().asList());
-        Piece checkFirst = moves.get(0).commencedBy();
+        //elements
+        ArrayList<Move> moves = new ArrayList<>(board.getAvailableMoves().asList()); //get every available moves
+        Piece checkFirst = moves.get(0).commencedBy();   //getting the piece that commenced first move
         boolean check = true;
+
+        //if the move is not empty iterate through the moves
         if(!moves.isEmpty()){
             for (Move move : moves) {
-                if (move.commencedBy() != checkFirst) {
+                if (move.commencedBy() != checkFirst) {  //if the piece of the first move is different from the current move's piece, check == false
                     check = false;
                     break;
                 }
@@ -214,40 +264,44 @@ public class Moriarty implements Ai {
         return check;
     }
 
-    //TODO minimax
+
+
     //MINIMAX//
     public Integer minimax(Long time, Board board, Move move, int depth, int alpha, int beta, Move originalMove, Board originalBoard) {
+        //needed elements
         Board.GameState gameState = (Board.GameState) board;
         List<Move> moves = board.getAvailableMoves().asList();
         long startTime = System.nanoTime();
         long endTime   = System.nanoTime();
         long totalTime = endTime - startTime;
-        if (depth == 0 || !board.getWinner().isEmpty() || (totalTime > (totalTime - 30) * 1000)) {
-            System.out.println("MOVE: " + originalMove);
+
+        //evaluate if the game has ended
+        if (depth == 0
+                || !board.getWinner().isEmpty()
+                || (totalTime > time)) {     //or if it has not been done in a designated time
             return evaluate(board, originalMove, originalBoard);
         }
-        if (moves.get(0).commencedBy() == Piece.MrX.MRX) {
+        if (moves.get(0).commencedBy() == Piece.MrX.MRX) {   //when it is MrX's turn
             int maxEval = Integer.MIN_VALUE;
-            for (Move child : moves) {
-                System.out.println("미스터엑스: " + child);
+            for (Move child : moves) {   //iterate through moves
                 Board updated = updatedBoard(board, child);
-                int eval = minimax(time, updated, child, depth - 1, alpha, beta, originalMove, originalBoard);
+                int eval = minimax(time, updated, child, depth - 1, alpha, beta, originalMove, originalBoard);  //do minimax for the next detectives' move (subtracting depth by 1)
                 maxEval = Math.max(maxEval, eval);
                 alpha = Math.max(alpha, maxEval);
-                if (beta <= alpha) {
+                if (beta <= alpha) {   //using alpha-beta pruning
                     break;
                 }
             }
             return maxEval;
         }
         else {
-            boolean detectiveRemaining = checkOnlyOneInRemaining(board);
-            if (detectiveRemaining) {
-                int minEval = Integer.MAX_VALUE;
+            boolean detectiveRemaining = checkOnlyOneInRemaining(board);  //check the remaining of the detectives
+            int minEval = Integer.MAX_VALUE;
+            if (detectiveRemaining) {    //if last detective
                 for (Move child : moves) {
-                    System.out.println("하나 남음: " + child);
                     if (moves.get(0).commencedBy() == child.commencedBy()){
                         Board updated = updatedBoard(board, child);
+                        //pass down the minimax to MrX by subtracting depth by 1
                         int eval = minimax(time, updated, move, depth - 1, alpha, beta, originalMove, originalBoard);
                         minEval = Math.min(minEval, eval);
                         beta = Math.min(minEval, beta);
@@ -256,14 +310,12 @@ public class Moriarty implements Ai {
                         }
                     }
                 }
-                return minEval;
             }
-            else {
-                int minEval = Integer.MAX_VALUE;
+            else { //if not the last detective
                 for (Move child : moves) {
-                    System.out.println("나머지: " + child);
-                    if (moves.get(0).commencedBy() == child.commencedBy()) {
+                    if (moves.get(0).commencedBy() == child.commencedBy()) { //choosing one detective piece and move
                         Board updated = updatedBoard(board, child);
+                        //minimax, but not decreasing the depth until the board is updated by all detectives' move
                         int eval = minimax(time , updated, move, depth, alpha, beta, originalMove, originalBoard);
                         minEval = Math.min(minEval, eval);
                         beta = Math.min(minEval, beta);
@@ -272,10 +324,35 @@ public class Moriarty implements Ai {
                         }
                     }
                 }
-                return minEval;
             }
+            return minEval;
         }
     }
+
+
+    //minimax helping function that returns the score
+    //score == distance between current detectives' location to destination of MrX's move
+    private Integer evaluate(Board board, Move move, Board originalBoard) {
+        //elements
+        Board.GameState gameState = (Board.GameState) board;
+        int score;
+
+        if (!board.getWinner().isEmpty()) {    //if winner determined
+            if (board.getWinner().contains(Piece.MrX.MRX)) {    //and if MrX, return 1000
+                score = 1000;
+            }
+            else {   //detectives, return -1000
+                score = -1000;
+            }
+        }
+        else {   //otherwise calculate the distance with Dijkstra
+            score = Dijkstra.calculateDistance(getDetectivesLocation(originalBoard), updateLocation(move), gameState.getSetup().graph);
+        }
+        return score;
+    }
+
+
+
 
     //a method that returns the score based on the type of the move
     private Integer filterDouble(Board board, Move move) {
@@ -295,38 +372,7 @@ public class Moriarty implements Ai {
         });
     }
 
-    private Integer evaluate(Board board, Move move, Board originalBoard) {
-        int score = 0;
-        Board.GameState gameState = (Board.GameState) board;
 
-        if (!board.getWinner().isEmpty()) {
-            if (board.getWinner().contains(Piece.MrX.MRX)) {
-                score = 1000;
-            }
-            else {
-                score = -1000;
-            }
-        }
-        else {
-            score = Dijkstra.calculateDistance(getDetectivesLocation(originalBoard), updateLocation(move), gameState.getSetup().graph);
-        }
-        return score;
-    }
-
-    //================================================================CHANGED FROM HERE===================================================================
-    //a function that checks whether this move is safe or not
-    //it returns a list of the nodes that are not adjacent to detectives' locations]//수정
-    private boolean checkAdjacentBool(Board board, List<Move> bestMoves) {
-        List<Move> possible = new ArrayList<>();
-        for (Move move : bestMoves) {
-            Set<Integer> occupation = detectiveAdjacent(move, board);
-            //if there are no detectives around add the move to the list
-            if (!occupation.add(updateLocation(move))) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     //a function that checks whether this move is safe or not
     //it returns a list of the nodes that are not adjacent to detectives' locations
@@ -342,14 +388,8 @@ public class Moriarty implements Ai {
         return possible;
     }
 
-    //추가!!!
-    private Integer adjacentScore(Board board, List<Move> bestMoves){
-        boolean check = checkAdjacentBool(board, bestMoves);
-        if(check) return 60;
-        else return 0;
-    }
 
-//================================================================CHANGED TILL HERE===================================================================
+
 
 
     //HELPER METHODS STARTS HERE//
@@ -365,31 +405,9 @@ public class Moriarty implements Ai {
     }
 
 
-    //a helper method that gathers all detectives' locations
-    private static List<Integer> getDetectivesLocation(Board board) {
-        List<Integer> locations = new ArrayList<>();
-        for (Piece piece : board.getPlayers()) {
-            if (!piece.isMrX()) {
-                locations.add(board.getDetectiveLocation((Piece.Detective) piece).get());
-            }
-        }
-        return locations;
-    }
-
 
     //helper method that returns the destination of the move
-    public static Integer updateLocation(Move move) {
-        return move.accept(new Move.Visitor<>() {
-            @Override
-            public Integer visit(Move.SingleMove move) {
-                return move.destination;
-            }
-            @Override
-            public Integer visit(Move.DoubleMove move) {
-                return move.destination2;
-            }
-        });
-    }
+
 
 
     //helper method that returns used tickets for the move
@@ -412,8 +430,7 @@ public class Moriarty implements Ai {
     }
 
 
-    //a helper method that weights transportations
-    //TODO transportationCost
+    //a helper method that weights transportations for detectives
     private Integer transportationCost(Integer source, Integer destination, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
         int ticketVal = 0;
         //returning different ticket values by transportation respectively
@@ -428,6 +445,7 @@ public class Moriarty implements Ai {
     }
 
 
+    //
     private Integer transportationCost(Board board, List<ScotlandYard.Ticket> tickets) {
         List<LogEntry> mrXLog = board.getMrXTravelLog();
         int ticketVal = 0;
@@ -448,72 +466,4 @@ public class Moriarty implements Ai {
         }
         return ticketVal;
     }
-//	private Integer checkDouble(Board board, List<ScotlandYard.Ticket> tickets) {
-//		int eval = 0;
-//		//returning different ticket values by transportation respectively
-//		for(ScotlandYard.Ticket ticket : tickets){
-//			if (Objects.requireNonNull(ticket) == ScotlandYard.Ticket.DOUBLE) {
-//				eval = 0;
-//			}
-//		}
-//		return eval;
-//	}
-    //HELPER METHODS ENDS HERE//
-
-    //Scoring method, returns the distance from the detectives' location to mrX's destination
-    //TODO Dijkstra
-//    private Integer calculateDistance(List<Integer> detectivesLocation, Integer mrXLocation, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-////		List<Integer> detectivesLocation = getDetectivesLocation(board);
-////		int mrXLocation = updateLocation(mrXMove);
-//        int size;
-//        List<List<Integer>> shortPath = new ArrayList<>();
-//        List<List<Integer>> allPath = new ArrayList<>();
-//        //calculate the distance from each detective to mrX's expected location
-//        for (Integer detectiveLocation : detectivesLocation) {
-//            Map<Integer, Integer> distance = new HashMap<>();
-//            Map<Integer, Integer> preNode = new HashMap<>();
-//            //using Dijkstra's algorithm
-//            for (Integer node : graph.nodes()) {
-//                distance.put(node, Integer.MAX_VALUE);
-//                preNode.put(node, null);
-//            }
-//            //setting the distance from source to source as 0
-//            distance.put(detectiveLocation, 0);
-//
-//            PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
-//            queue.add(detectiveLocation);
-//            //using Dijkstra's algorithm to find the shortest path from the detective to mrX
-//            while (!queue.isEmpty()) {
-//                Integer currentNode = queue.poll();
-//                if (currentNode.equals(mrXLocation)) break;
-//                for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
-//                    Integer neighbour = edge.adjacentNode(currentNode);
-//                    Integer weight = transportationCost(currentNode, mrXLocation, graph);
-//                    int newDistance = distance.get(currentNode) + 1;
-//                    if (newDistance < distance.get(neighbour)) {
-//                        distance.replace(neighbour, newDistance);
-//                        preNode.replace(neighbour, currentNode);
-//                        queue.remove(neighbour);
-//                        queue.add(neighbour);
-//                    }
-//                }
-//            }
-//            //store the path from detective's location to mrX's expected location
-//            List<Integer> path = new ArrayList<>();
-//            Integer node = mrXLocation;
-//            while (node != null) {
-//                path.add(node);
-//                node = preNode.get(node);
-//            }
-//            //focus on the detectives who are close enough to consider
-//            if (path.size() < 4) {
-//                shortPath.add(path);
-//            }
-//            //add every detective's path on the list
-//            allPath.add(path);
-//        }
-//        //calculate the total size of the paths
-//        size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
-//        return size;
-//    }
 }

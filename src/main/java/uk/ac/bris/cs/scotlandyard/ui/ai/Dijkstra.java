@@ -10,11 +10,7 @@ import java.util.*;
 
 public class Dijkstra {
     static Integer calculateDistance(List<Integer> detectivesLocation, Integer mrXLocation, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-//		List<Integer> detectivesLocation = getDetectivesLocation(board);
-//		int mrXLocation = updateLocation(mrXMove);
-        System.out.println("DETECTIVES' LOC:" + detectivesLocation);
         int size;
-//		System.out.println("MRX's LOC: " + mrXLocation);
         List<List<Integer>> shortPath = new ArrayList<>();
         List<List<Integer>> allPath = new ArrayList<>();
         List<List<Integer>> longPath = new ArrayList<>();
@@ -38,7 +34,8 @@ public class Dijkstra {
                 if (currentNode.equals(mrXLocation)) break;
                 for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
                     Integer neighbour = edge.adjacentNode(currentNode);
-//                    Integer weight = Moriarty.transportationCost(currentNode, mrXLocation, graph);
+
+//                  Integer weight = Moriarty.transportationCost(currentNode, mrXLocation, graph);
                     int newDistance = distance.get(currentNode) + 1;
                     if (newDistance < distance.get(neighbour)) {
                         distance.replace(neighbour, newDistance);
@@ -59,22 +56,10 @@ public class Dijkstra {
             if (path.size() < 5) {
                 shortPath.add(path);
             }
-//			else{
-//				longPath.add(path);
-//			}
-//
-//			if (shortPath.size() < 4){
-//				size = longPath.size();
-//			}
-            //add every detective's path on the list
             allPath.add(path);
-//			System.out.println("PATH: " + path);
-            System.out.println("PATH: " + path + " " + path.size());
         }
         //calculate the total size of the paths
         size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
-        System.out.println("SIZE: " + size);
-        System.out.println("===================================================================================");
         return size;
     }
 }
