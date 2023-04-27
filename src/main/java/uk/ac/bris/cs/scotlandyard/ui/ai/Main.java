@@ -6,3 +6,4 @@ package uk.ac.bris.cs.scotlandyard.ui.ai;
 public class Main {
 	public static void main(String[] args) {uk.ac.bris.cs.scotlandyard.Main.main(args);}
 }
+

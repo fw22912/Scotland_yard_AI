@@ -13,12 +13,12 @@ import com.google.common.graph.ImmutableValueGraph;
 import io.atlassian.fugue.Pair;
 import uk.ac.bris.cs.scotlandyard.model.*;
 
-public class PLZ implements Ai {
+public class MORIATY implements Ai {
 
 	@Nonnull
 	@Override
 	public String name() {
-		return "PLZ";
+		return "MORIATY";
 	}
 
 
@@ -34,97 +34,87 @@ public class PLZ implements Ai {
 		int beta = Integer.MAX_VALUE;
 		int depth = 3;
 		List<Move> availableMoves = board.getAvailableMoves().asList();
+		System.out.println("AVAILABLE MOVES: " + availableMoves) ;
+		List<Move> farMoves = farthestMove(board, availableMoves);
+		System.out.println("size: " + farMoves.size());
 		List<Move> optimalMoves = new ArrayList<>();
-//		List<Move> availableMoves = new ArrayList<>();
+		System.out.println("FARMOVES: " + farMoves);
 		Move bestMove = null;
 
-			//iterate through all the available moves and get a move with the highest minimax score
-			for (Move move : availableMoves) {
-				Board updated = updatedBoard(board, move);
-				//do minimax with updatedBoard after designated move
-				int eval = minimax(updated, move, depth - 1, alpha, beta);
-				if (maxEval < eval) {
-					maxEval = eval;
-					optimalMoves.clear();
-					optimalMoves.add(move);
-				} else if (maxEval == eval) {
-					optimalMoves.add(move);
-				}
+		//iterate through all the available moves and get a move with the highest minimax score
+		for (Move move : farMoves) {
+			Board updated = updatedBoard(board, move);
+			//do minimax with updatedBoard after designated move
+			int eval = minimax(updated, move, depth - 1, alpha, beta, board, move);
+			System.out.println("Move: " + move + "   EVAL: " + eval);
+			if (maxEval < eval) {
+				maxEval = eval;
+				optimalMoves.clear();
+				optimalMoves.add(move);
+			} else if (maxEval == eval) {
+				optimalMoves.add(move);
 			}
-		return returnBestMove(board, optimalMoves);
+		}
+		System.out.println("OPTIMALMOVES: " + optimalMoves);
+		//optimal Moves에서는 이미 dijkstra와 score2 << evaluate 된 move들만 들어있음
+
+		return returnBestMove(board, optimalMoves, board);
 	}
 
 
 
-	private Move returnBestMove(Board board, List<Move> optimalMoves){
+	private Integer scoreMove(Board board, Move move) {
+		Board.GameState gameState = (Board.GameState) board;
+		int transportCost = transportationCost(board, updateTicket(move));
+		int adjacent = gameState.getSetup().graph.adjacentNodes(updateLocation(move)).size();
+		int nearby = detectivesNearby(board, move);
+		int score = transportCost + adjacent + nearby;
+		return score;
+	}
+
+
+	private List<Move> farthestMove(Board board, List<Move> availableMoves){
+		List<Integer> DLocation = getDetectivesLocation(board);
+		Board.GameState gameState = (Board.GameState) board;
+		List<Move> farMoves = new ArrayList<>();
+
+		int maxDistance = 0;
+		for(Move move : availableMoves){
+			int eval = calculateDistance(DLocation, updateLocation(move), gameState.getSetup().graph);
+			if(eval > maxDistance){
+				maxDistance = eval;
+				farMoves.clear();
+				farMoves.add(move);
+			}
+			else if(eval == maxDistance){
+				farMoves.add(move);
+			}
+		}
+		return farMoves;
+	}
+
+
+	private Move returnBestMove(Board board, List<Move> optimalMoves, Board originalBoard){
 //		Random ran = new Random();
 		Move bestMove;
-		Board.GameState gameState = (Board.GameState) board;
-		Set<Integer> destinations = returnAllDestinations(optimalMoves);
 		List<Move> highestMoves = new ArrayList<>();
-		System.out.println("OPTIMALMOVE: " + optimalMoves);
-		int maxScore = Integer.MIN_VALUE;
-
-		if(optimalMoves.size() == 1) {
-			bestMove = optimalMoves.get(0);
+		List<Move> noAdjacentMoves = checkAdjacent(board, optimalMoves);
+		List<Move> alternativeMoves = new ArrayList<>();
+		List<Move> finalMoves = new ArrayList<>();
+		if (noAdjacentMoves.isEmpty()) {
+			alternativeMoves.addAll(filterSingleDouble(board, optimalMoves));
+			bestMove = alternativeMoves.get(0);
 		}
-		else{
-			for (Move optimalMove : optimalMoves) {
-//				destination.add(updateLocation(scoredMove));
-				int score2 = transportationCost(board, updateTicket(optimalMove))
-						+ gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
-						- detectivesNearby(board, optimalMove);
-				//추가!!!
-//						+ adjacentScore(board, optimalMoves);
-				System.out.println("TRANSPORTATION SCORE: " + transportationCost(board, updateTicket(optimalMove)));
-				System.out.println("ADJACENTNODES SCORE: " + gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size());
-				System.out.println("NEARBYDETECTIVE SCORE: " + detectivesNearby(board, optimalMove));
-				System.out.println("MOVE: " + optimalMove + " score: " + score2);
-				System.out.println("----------------------------------------------------");
-				if (transportationCost(board, updateTicket(optimalMove)) == 200) {
-					if (destinations.size() > 1) {
-						int score3 = gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
-								- detectivesNearby(board, optimalMove);
-						if (score3 > maxScore) {
-							highestMoves.clear();
-							highestMoves.add(optimalMove);
-							maxScore = score3;
-						}
-						else if (score3 == maxScore) {
-							highestMoves.add(optimalMove);
-						}
-					}
-				}
-				if (score2 > maxScore) {
-					highestMoves.clear();
-					highestMoves.add(optimalMove);
-					maxScore = score2;
-				}
-				else if (score2 == maxScore) {
-					highestMoves.add(optimalMove);
-				}
-			}
-			System.out.println("HIGHESTMOVES: " + highestMoves);
-
-			List<Move> noAdjacentMoves = checkAdjacent(board, highestMoves);
-			System.out.println("NOADJACENTMOVES: " + noAdjacentMoves);
-			List<Move> alternativeMoves = new ArrayList<>();
-			List<Move> finalMoves = new ArrayList<>();
-			if (noAdjacentMoves.isEmpty()) {
-				alternativeMoves.addAll(filterSingleDouble(board, highestMoves));
-				bestMove = alternativeMoves.get(0);
-			}
+		else {
+			//NEW LOOP
+			if (noAdjacentMoves.size() == 1) {bestMove = noAdjacentMoves.get(0);}
 			else {
-				//NEW LOOP
-				if (noAdjacentMoves.size() == 1) {
-					bestMove = noAdjacentMoves.get(0);
-				} else {
-					finalMoves.addAll(filterSingleDouble(board, noAdjacentMoves));
-					bestMove = finalMoves.get(0);
-					System.out.println("FINALMOVES: " + finalMoves);
-				}
+				finalMoves.addAll(filterSingleDouble(board, noAdjacentMoves));
+				bestMove = finalMoves.get(0);
+				System.out.println("FINALMOVES: " + finalMoves);
 			}
 		}
+
 		System.out.println("BESTMOVE: " + bestMove);
 		return bestMove;
 	}
@@ -188,8 +178,8 @@ public class PLZ implements Ai {
 	//getting adjacent nodes from the board after the move and the adjacent nodes from there
 	private List<Integer> adjacentNodes(Board board, Move move){
 		Board.GameState gameState = (Board.GameState) board;
-		Board updated = updatedBoard(board, move);
-		List<Move> adjacentMoves = updated.getAvailableMoves().asList();
+//		Board updated = updatedBoard(board, move);
+		List<Move> adjacentMoves = board.getAvailableMoves().asList();
 		Set<Integer> adjacentNodes = new HashSet<>();
 		Set<Integer> farNodes = new HashSet<>();
 
@@ -209,26 +199,43 @@ public class PLZ implements Ai {
 		return ((Board.GameState) board).advance(move);
 	}
 
+	private boolean checkOnlyOneInRemaining(Board board) {
+		ArrayList<Move> moves = new ArrayList<>(board.getAvailableMoves().asList());
+		Piece checkFirst = moves.get(0).commencedBy();
+		boolean check = true;
+		if (!moves.isEmpty()){
+			for (Move move : moves) {
+				if (move.commencedBy() != checkFirst) {
+					check = false;
+					break;
+				}
+			}
+		}
+		return check;
+	}
+
 
 	//TODO minimax
 	//MINIMAX//
-	public Integer minimax(Board board, Move move, int depth, int alpha, int beta) {
+	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, Board originalBoard, Move originalMove) {
 		Board.GameState gameState = (Board.GameState) board;
 		List<Move> moves = board.getAvailableMoves().asList();
+		boolean detectiveRemaining = checkOnlyOneInRemaining(board);
+		int maxEval = Integer.MIN_VALUE;
+		int minEval = Integer.MAX_VALUE;
 //		System.out.println(move);
 		if (depth == 0 || !board.getWinner().isEmpty()) {
-//			System.out.println("depth 0 여기 오나요 제발");
-//			System.out.println("MOVE: " + move + " SCORE: " + calculateMoveDistance(board, move));
-//			return calculateMoveDistance(board, move);
-			System.out.println("MOVE: " + move + " SCORE: " + calculateDistance(getDetectivesLocation(board), updateLocation(move), gameState.getSetup().graph));
-			return evaluate(board, move);
+			System.out.println("-----------------------------NEW MOVE------------------------");
+			System.out.println("MOVE: " + move + " SCORE: " + evaluate(board, move, originalBoard));
+			return evaluate(board, originalMove, originalBoard);
 		}
 		if (moves.get(0).commencedBy() == Piece.MrX.MRX) {
-			int maxEval = Integer.MIN_VALUE;
+			System.out.println("MrX: " + moves);
 			for (Move child : moves) {
+//				System.out.println("MRX TURN CHILD: " + child);
 				Board updated = updatedBoard(board, child);
 //				System.out.println("체크미스터엑스 T 보드업데이트됨");
-				int eval = minimax(updated, child, depth - 1, alpha, beta);
+				int eval = minimax(updated, child, depth - 1, alpha, beta, originalBoard, originalMove);
 				maxEval = Math.max(maxEval, eval);
 				alpha = Math.max(alpha, maxEval);
 				if (beta <= alpha) {
@@ -238,33 +245,52 @@ public class PLZ implements Ai {
 			return maxEval;
 		}
 		else {
-			int minEval = Integer.MAX_VALUE;
-			for (Move child : moves) {
-				if (moves.get(0).commencedBy() == child.commencedBy()){
-					Board updated = updatedBoard(board, child);
+//			System.out.println("numOfDetectives: " + numOfDetectives);
+			if (detectiveRemaining) {
+				System.out.println("Detectives: " + moves);
+				for (Move child : moves) {
+//					System.out.println("DETECTIVES TURN CHILD BUT ONLY ONE REMAINING: " + child);
+					if (moves.get(0).commencedBy() == child.commencedBy()){
+						Board updated = updatedBoard(board, child);
 //				System.out.println("체크미스터엑스 F 보드업데이트됨");
-					int eval = minimax(updated, move, depth - 1, alpha, beta);
-					minEval = Math.min(minEval, eval);
-					beta = Math.min(minEval, beta);
-					if (beta <= alpha) {
-						break;
+						int eval = minimax(updated, move, depth - 1, alpha, beta, originalBoard, originalMove);
+						minEval = Math.min(minEval, eval);
+						beta = Math.min(minEval, beta);
+						if (beta <= alpha) {
+							break;
+						}
 					}
 				}
+				return minEval;
 			}
-			return minEval;
+			else {
+//				int minEval = Integer.MAX_VALUE;
+				System.out.println("Detectives: " + moves);
+				for (Move child : moves) {
+//					System.out.println("DETECTIVES TURN CHILD ELSE: " + child);
+					if (moves.get(0).commencedBy() == child.commencedBy()) {
+						Board updated = updatedBoard(board, child);
+//				System.out.println("체크미스터엑스 F 보드업데이트됨");
+						int eval = minimax(updated, move, depth, alpha, beta, originalBoard, originalMove);
+						minEval = Math.min(minEval, eval);
+						beta = Math.min(minEval, beta);
+						if (beta <= alpha) {
+							break;
+						}
+					}
+				}
+				return minEval;
+			}
 		}
 	}
 
 	//a method that returns the score based on the type of the move
 	private Integer filterDouble(Board board, Move move) {
 		return move.accept(new Move.Visitor<>() {
-			final Board.GameState gameState = (Board.GameState) board;
-
 			@Override
 			public Integer visit(Move.SingleMove move) {
 				return 1;
 			}
-
 			//if it is double move, set it to the default value 0 whenever there are any possible singleMoves
 			@Override
 			public Integer visit(Move.DoubleMove move) {
@@ -273,7 +299,9 @@ public class PLZ implements Ai {
 		});
 	}
 
-	private Integer evaluate(Board board, Move move) {
+
+
+	private Integer evaluate(Board board, Move move, Board originalBoard) {
 		int score = 0;
 		Board.GameState gameState = (Board.GameState) board;
 
@@ -286,12 +314,16 @@ public class PLZ implements Ai {
 			}
 		}
 		else {
-			score = calculateDistance(getDetectivesLocation(board), updateLocation(move), gameState.getSetup().graph);
+			score = scoreMove(originalBoard, move);
 		}
 		return score;
 	}
 
-//================================================================CHANGED FROM HERE===================================================================
+
+
+
+
+
 	//a function that checks whether this move is safe or not
 	//it returns a list of the nodes that are not adjacent to detectives' locations]//수정
 	private boolean checkAdjacentBool(Board board, List<Move> bestMoves) {
@@ -306,6 +338,7 @@ public class PLZ implements Ai {
 		return false;
 	}
 
+
 	//a function that checks whether this move is safe or not
 	//it returns a list of the nodes that are not adjacent to detectives' locations
 	private List<Move> checkAdjacent(Board board, List<Move> bestMoves) {
@@ -319,6 +352,7 @@ public class PLZ implements Ai {
 		}
 		return possible;
 	}
+
 
 	//추가!!!
 	private Integer adjacentScore(Board board, List<Move> bestMoves){
@@ -374,7 +408,6 @@ public class PLZ implements Ai {
 	public static List<ScotlandYard.Ticket> updateTicket(Move move) {
 		return move.accept(new Move.Visitor<>() {
 			final List<ScotlandYard.Ticket> newTicket = new ArrayList<>();
-
 			@Override
 			public List<ScotlandYard.Ticket> visit(Move.SingleMove move) {
 				newTicket.add(move.ticket);
@@ -416,10 +449,12 @@ public class PLZ implements Ai {
 				case BUS -> ticketVal += 4;
 				case UNDERGROUND -> ticketVal += 8;
 				case SECRET -> {
-					if (mrXLog.size() != 0){
+					if (mrXLog.size() > 1){
 						//if mrX's log size is larger than 0 and is after reveal
 						if(board.getSetup().moves.get(mrXLog.size() - 1)) {
 //							System.out.println("SIZE: " + mrXLog.size());
+							System.out.println("Came here to give 200 points!");
+							System.out.println("LOG SIZE: " + (mrXLog.size() - 1));
 							ticketVal += 200;}
 					}
 				}
@@ -449,6 +484,7 @@ public class PLZ implements Ai {
 //		System.out.println("MRX's LOC: " + mrXLocation);
 		List<List<Integer>> shortPath = new ArrayList<>();
 		List<List<Integer>> allPath = new ArrayList<>();
+		List<List<Integer>> longPath = new ArrayList<>();
 		//calculate the distance from each detective to mrX's expected location
 		for (Integer detectiveLocation : detectivesLocation) {
 			Map<Integer, Integer> distance = new HashMap<>();
@@ -487,9 +523,16 @@ public class PLZ implements Ai {
 				node = preNode.get(node);
 			}
 			//focus on the detectives who are close enough to consider
-			if (path.size() < 4) {
+			if (path.size() < 5) {
 				shortPath.add(path);
 			}
+//			else{
+//				longPath.add(path);
+//			}
+//
+//			if (shortPath.size() < 4){
+//				size = longPath.size();
+//			}
 			//add every detective's path on the list
 			allPath.add(path);
 //			System.out.println("PATH: " + path);
