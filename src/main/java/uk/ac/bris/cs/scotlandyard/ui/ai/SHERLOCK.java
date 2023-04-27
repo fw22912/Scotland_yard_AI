@@ -10,12 +10,12 @@ import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class Sherlock implements Ai {
+public class SHERLOCK implements Ai {
 
     @Nonnull
     @Override
     public String name() {
-        return "Sherlock";
+        return "SHERLOCK";
     }
 
     @Nonnull

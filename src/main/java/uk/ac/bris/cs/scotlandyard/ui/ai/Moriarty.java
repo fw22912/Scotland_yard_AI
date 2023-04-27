@@ -12,13 +12,15 @@ import com.google.common.graph.EndpointPair;
 import com.google.common.graph.ImmutableValueGraph;
 import io.atlassian.fugue.Pair;
 import uk.ac.bris.cs.scotlandyard.model.*;
+import uk.ac.bris.cs.scotlandyard.ui.ai.*;
 
-public class MORIATY implements Ai {
+
+public class Moriarty implements Ai {
 
 	@Nonnull
 	@Override
 	public String name() {
-		return "MORIATY";
+		return "Moriarty";
 	}
 
 
@@ -27,7 +29,6 @@ public class MORIATY implements Ai {
 	public Move pickMove(
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
-
 		Board.GameState gameState = (Board.GameState) board;
 		int maxEval = Integer.MIN_VALUE;
 		int alpha = Integer.MIN_VALUE;
@@ -80,7 +81,7 @@ public class MORIATY implements Ai {
 
 		int maxDistance = 0;
 		for(Move move : availableMoves){
-			int eval = calculateDistance(DLocation, updateLocation(move), gameState.getSetup().graph);
+			int eval = Dijkstra.calculateDistance(DLocation, updateLocation(move), gameState.getSetup().graph);
 			if(eval > maxDistance){
 				maxDistance = eval;
 				farMoves.clear();
@@ -215,74 +216,74 @@ public class MORIATY implements Ai {
 	}
 
 
-	//TODO minimax
-	//MINIMAX//
-	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, Board originalBoard, Move originalMove) {
-		Board.GameState gameState = (Board.GameState) board;
-		List<Move> moves = board.getAvailableMoves().asList();
-		boolean detectiveRemaining = checkOnlyOneInRemaining(board);
-		int maxEval = Integer.MIN_VALUE;
-		int minEval = Integer.MAX_VALUE;
-//		System.out.println(move);
-		if (depth == 0 || !board.getWinner().isEmpty()) {
-			System.out.println("-----------------------------NEW MOVE------------------------");
-			System.out.println("MOVE: " + move + " SCORE: " + evaluate(board, move, originalBoard));
-			return evaluate(board, originalMove, originalBoard);
-		}
-		if (moves.get(0).commencedBy() == Piece.MrX.MRX) {
-			System.out.println("MrX: " + moves);
-			for (Move child : moves) {
-//				System.out.println("MRX TURN CHILD: " + child);
-				Board updated = updatedBoard(board, child);
-//				System.out.println("체크미스터엑스 T 보드업데이트됨");
-				int eval = minimax(updated, child, depth - 1, alpha, beta, originalBoard, originalMove);
-				maxEval = Math.max(maxEval, eval);
-				alpha = Math.max(alpha, maxEval);
-				if (beta <= alpha) {
-					break;
-				}
-			}
-			return maxEval;
-		}
-		else {
-//			System.out.println("numOfDetectives: " + numOfDetectives);
-			if (detectiveRemaining) {
-				System.out.println("Detectives: " + moves);
-				for (Move child : moves) {
-//					System.out.println("DETECTIVES TURN CHILD BUT ONLY ONE REMAINING: " + child);
-					if (moves.get(0).commencedBy() == child.commencedBy()){
-						Board updated = updatedBoard(board, child);
-//				System.out.println("체크미스터엑스 F 보드업데이트됨");
-						int eval = minimax(updated, move, depth - 1, alpha, beta, originalBoard, originalMove);
-						minEval = Math.min(minEval, eval);
-						beta = Math.min(minEval, beta);
-						if (beta <= alpha) {
-							break;
-						}
-					}
-				}
-				return minEval;
-			}
-			else {
-//				int minEval = Integer.MAX_VALUE;
-				System.out.println("Detectives: " + moves);
-				for (Move child : moves) {
-//					System.out.println("DETECTIVES TURN CHILD ELSE: " + child);
-					if (moves.get(0).commencedBy() == child.commencedBy()) {
-						Board updated = updatedBoard(board, child);
-//				System.out.println("체크미스터엑스 F 보드업데이트됨");
-						int eval = minimax(updated, move, depth, alpha, beta, originalBoard, originalMove);
-						minEval = Math.min(minEval, eval);
-						beta = Math.min(minEval, beta);
-						if (beta <= alpha) {
-							break;
-						}
-					}
-				}
-				return minEval;
-			}
-		}
-	}
+//	//TODO minimax
+//	//MINIMAX//
+//	public Integer minimax(Board board, Move move, int depth, int alpha, int beta, Board originalBoard, Move originalMove) {
+//		Board.GameState gameState = (Board.GameState) board;
+//		List<Move> moves = board.getAvailableMoves().asList();
+//		boolean detectiveRemaining = checkOnlyOneInRemaining(board);
+//		int maxEval = Integer.MIN_VALUE;
+//		int minEval = Integer.MAX_VALUE;
+////		System.out.println(move);
+//		if (depth == 0 || !board.getWinner().isEmpty()) {
+//			System.out.println("-----------------------------NEW MOVE------------------------");
+//			System.out.println("MOVE: " + move + " SCORE: " + evaluate(board, move, originalBoard));
+//			return evaluate(board, originalMove, originalBoard);
+//		}
+//		if (moves.get(0).commencedBy() == Piece.MrX.MRX) {
+//			System.out.println("MrX: " + moves);
+//			for (Move child : moves) {
+////				System.out.println("MRX TURN CHILD: " + child);
+//				Board updated = updatedBoard(board, child);
+////				System.out.println("체크미스터엑스 T 보드업데이트됨");
+//				int eval = minimax(updated, child, depth - 1, alpha, beta, originalBoard, originalMove);
+//				maxEval = Math.max(maxEval, eval);
+//				alpha = Math.max(alpha, maxEval);
+//				if (beta <= alpha) {
+//					break;
+//				}
+//			}
+//			return maxEval;
+//		}
+//		else {
+////			System.out.println("numOfDetectives: " + numOfDetectives);
+//			if (detectiveRemaining) {
+//				System.out.println("Detectives: " + moves);
+//				for (Move child : moves) {
+////					System.out.println("DETECTIVES TURN CHILD BUT ONLY ONE REMAINING: " + child);
+//					if (moves.get(0).commencedBy() == child.commencedBy()){
+//						Board updated = updatedBoard(board, child);
+////				System.out.println("체크미스터엑스 F 보드업데이트됨");
+//						int eval = minimax(updated, move, depth - 1, alpha, beta, originalBoard, originalMove);
+//						minEval = Math.min(minEval, eval);
+//						beta = Math.min(minEval, beta);
+//						if (beta <= alpha) {
+//							break;
+//						}
+//					}
+//				}
+//				return minEval;
+//			}
+//			else {
+////				int minEval = Integer.MAX_VALUE;
+//				System.out.println("Detectives: " + moves);
+//				for (Move child : moves) {
+////					System.out.println("DETECTIVES TURN CHILD ELSE: " + child);
+//					if (moves.get(0).commencedBy() == child.commencedBy()) {
+//						Board updated = updatedBoard(board, child);
+////				System.out.println("체크미스터엑스 F 보드업데이트됨");
+//						int eval = minimax(updated, move, depth, alpha, beta, originalBoard, originalMove);
+//						minEval = Math.min(minEval, eval);
+//						beta = Math.min(minEval, beta);
+//						if (beta <= alpha) {
+//							break;
+//						}
+//					}
+//				}
+//				return minEval;
+//			}
+//		}
+//	}
 
 	//a method that returns the score based on the type of the move
 	private Integer filterDouble(Board board, Move move) {
@@ -425,18 +426,18 @@ public class MORIATY implements Ai {
 
 	//a helper method that weights transportations
 	//TODO transportationCost
-	private Integer transportationCost(Integer source, Integer destination, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-		int ticketVal = 0;
-		//returning different ticket values by transportation respectively
-		for (ScotlandYard.Transport t : graph.edgeValueOrDefault(source, destination, ImmutableSet.of())) {
-			switch(t.requiredTicket()){
-				case TAXI -> ticketVal += 2;
-				case BUS -> ticketVal += 4;
-				case UNDERGROUND -> ticketVal += 8;
-			}
-		}
-		return ticketVal;
-	}
+//	static Integer transportationCost(Integer source, Integer destination, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
+//		int ticketVal = 0;
+//		//returning different ticket values by transportation respectively
+//		for (ScotlandYard.Transport t : graph.edgeValueOrDefault(source, destination, ImmutableSet.of())) {
+//			switch(t.requiredTicket()){
+//				case TAXI -> ticketVal += 2;
+//				case BUS -> ticketVal += 4;
+//				case UNDERGROUND -> ticketVal += 8;
+//			}
+//		}
+//		return ticketVal;
+//	}
 
 
 	private Integer transportationCost(Board board, List<ScotlandYard.Ticket> tickets) {
@@ -476,72 +477,72 @@ public class MORIATY implements Ai {
 
 	//Scoring method, returns the distance from the detectives' location to mrX's destination
 	//TODO Dijkstra
-	private Integer calculateDistance(List<Integer> detectivesLocation, Integer mrXLocation, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-//		List<Integer> detectivesLocation = getDetectivesLocation(board);
-//		int mrXLocation = updateLocation(mrXMove);
-		System.out.println("DETECTIVES' LOC:" + detectivesLocation);
-		int size;
-//		System.out.println("MRX's LOC: " + mrXLocation);
-		List<List<Integer>> shortPath = new ArrayList<>();
-		List<List<Integer>> allPath = new ArrayList<>();
-		List<List<Integer>> longPath = new ArrayList<>();
-		//calculate the distance from each detective to mrX's expected location
-		for (Integer detectiveLocation : detectivesLocation) {
-			Map<Integer, Integer> distance = new HashMap<>();
-			Map<Integer, Integer> preNode = new HashMap<>();
-			//using Dijkstra's algorithm
-			for (Integer node : graph.nodes()) {
-				distance.put(node, Integer.MAX_VALUE);
-				preNode.put(node, null);
-			}
-			//setting the distance from source to source as 0
-			distance.put(detectiveLocation, 0);
-
-			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
-			queue.add(detectiveLocation);
-			//using Dijkstra's algorithm to find the shortest path from the detective to mrX
-			while (!queue.isEmpty()) {
-				Integer currentNode = queue.poll();
-				if (currentNode.equals(mrXLocation)) break;
-				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
-					Integer neighbour = edge.adjacentNode(currentNode);
-					Integer weight = transportationCost(currentNode, mrXLocation, graph);
-					int newDistance = distance.get(currentNode) + 1;
-					if (newDistance < distance.get(neighbour)) {
-						distance.replace(neighbour, newDistance);
-						preNode.replace(neighbour, currentNode);
-						queue.remove(neighbour);
-						queue.add(neighbour);
-					}
-				}
-			}
-			//store the path from detective's location to mrX's expected location
-			List<Integer> path = new ArrayList<>();
-			Integer node = mrXLocation;
-			while (node != null) {
-				path.add(node);
-				node = preNode.get(node);
-			}
-			//focus on the detectives who are close enough to consider
-			if (path.size() < 5) {
-				shortPath.add(path);
-			}
-//			else{
-//				longPath.add(path);
+//	private Integer calculateDistance(List<Integer> detectivesLocation, Integer mrXLocation, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
+////		List<Integer> detectivesLocation = getDetectivesLocation(board);
+////		int mrXLocation = updateLocation(mrXMove);
+//		System.out.println("DETECTIVES' LOC:" + detectivesLocation);
+//		int size;
+////		System.out.println("MRX's LOC: " + mrXLocation);
+//		List<List<Integer>> shortPath = new ArrayList<>();
+//		List<List<Integer>> allPath = new ArrayList<>();
+//		List<List<Integer>> longPath = new ArrayList<>();
+//		//calculate the distance from each detective to mrX's expected location
+//		for (Integer detectiveLocation : detectivesLocation) {
+//			Map<Integer, Integer> distance = new HashMap<>();
+//			Map<Integer, Integer> preNode = new HashMap<>();
+//			//using Dijkstra's algorithm
+//			for (Integer node : graph.nodes()) {
+//				distance.put(node, Integer.MAX_VALUE);
+//				preNode.put(node, null);
 //			}
+//			//setting the distance from source to source as 0
+//			distance.put(detectiveLocation, 0);
 //
-//			if (shortPath.size() < 4){
-//				size = longPath.size();
+//			PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(distance::get));
+//			queue.add(detectiveLocation);
+//			//using Dijkstra's algorithm to find the shortest path from the detective to mrX
+//			while (!queue.isEmpty()) {
+//				Integer currentNode = queue.poll();
+//				if (currentNode.equals(mrXLocation)) break;
+//				for (EndpointPair<Integer> edge : graph.incidentEdges(currentNode)) {
+//					Integer neighbour = edge.adjacentNode(currentNode);
+//					Integer weight = transportationCost(currentNode, mrXLocation, graph);
+//					int newDistance = distance.get(currentNode) + 1;
+//					if (newDistance < distance.get(neighbour)) {
+//						distance.replace(neighbour, newDistance);
+//						preNode.replace(neighbour, currentNode);
+//						queue.remove(neighbour);
+//						queue.add(neighbour);
+//					}
+//				}
 //			}
-			//add every detective's path on the list
-			allPath.add(path);
-//			System.out.println("PATH: " + path);
-			System.out.println("PATH: " + path + " " + path.size());
-		}
-		//calculate the total size of the paths
-		size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
-		System.out.println("SIZE: " + size);
-		System.out.println("===================================================================================");
-		return size;
-	}
+//			//store the path from detective's location to mrX's expected location
+//			List<Integer> path = new ArrayList<>();
+//			Integer node = mrXLocation;
+//			while (node != null) {
+//				path.add(node);
+//				node = preNode.get(node);
+//			}
+//			//focus on the detectives who are close enough to consider
+//			if (path.size() < 5) {
+//				shortPath.add(path);
+//			}
+////			else{
+////				longPath.add(path);
+////			}
+////
+////			if (shortPath.size() < 4){
+////				size = longPath.size();
+////			}
+//			//add every detective's path on the list
+//			allPath.add(path);
+////			System.out.println("PATH: " + path);
+//			System.out.println("PATH: " + path + " " + path.size());
+//		}
+//		//calculate the total size of the paths
+//		size = shortPath.isEmpty() ? allPath.stream().mapToInt(List::size).sum() : shortPath.stream().mapToInt(List::size).sum();
+//		System.out.println("SIZE: " + size);
+//		System.out.println("===================================================================================");
+//		return size;
+//	}
 }
