@@ -6,7 +6,7 @@ import uk.ac.bris.cs.scotlandyard.model.Piece;
 
 import java.util.List;
 
-public class Minimax extends MORIARTY{
+public class Minimax extends Moriarty{
 
     private Board board;
     private Board updated;

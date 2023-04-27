@@ -200,7 +200,7 @@ public class Moriarty implements Ai {
 		return ((Board.GameState) board).advance(move);
 	}
 
-	private boolean checkOnlyOneInRemaining(Board board) {
+	public boolean checkOnlyOneInRemaining(Board board) {
 		ArrayList<Move> moves = new ArrayList<>(board.getAvailableMoves().asList());
 		Piece checkFirst = moves.get(0).commencedBy();
 		boolean check = true;
