@@ -5,11 +5,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
-
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.graph.EndpointPair;
-import com.google.common.graph.ImmutableValueGraph;
 import io.atlassian.fugue.Pair;
 import uk.ac.bris.cs.scotlandyard.model.*;
 
@@ -28,7 +23,6 @@ public class Moriarty implements Ai {
             @Nonnull Board board,
             Pair<Long, TimeUnit> timeoutPair) {
 
-        Board.GameState gameState = (Board.GameState) board;
         int maxEval = Integer.MIN_VALUE;
         int alpha = Integer.MIN_VALUE;
         int beta = Integer.MAX_VALUE;
@@ -61,7 +55,6 @@ public class Moriarty implements Ai {
         //elements for storing the highest move after evaluation
         Move bestMove;
         Board.GameState gameState = (Board.GameState) board;
-        Set<Integer> destinations = returnAllDestinations(optimalMoves);
         List<Move> highestMoves = new ArrayList<>();
         int maxScore = Integer.MIN_VALUE;
 
@@ -75,7 +68,7 @@ public class Moriarty implements Ai {
                 // and subtracting the num of nearby detectives
                 int score2 = transportationCost(board, updateTicket(optimalMove))
                         + gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
-                        - detectivesNearby(board, optimalMove);
+                        - (detectivesNearby(board, optimalMove) * 3);
                 //find the highest score and add it to the list
                 if (score2 > maxScore) {
                     highestMoves.clear();
@@ -136,18 +129,6 @@ public class Moriarty implements Ai {
         }
         return totalVal;
     }
-
-
-
-    //returns the destination of given list of moves
-    private Set<Integer> returnAllDestinations(List<Move> highestMoves){
-        Set<Integer> destination = new HashSet<>();
-        for(Move move : highestMoves){
-            destination.add(updateLocation(move));
-        }
-        return destination;
-    }
-
 
 
 
@@ -269,7 +250,6 @@ public class Moriarty implements Ai {
     //MINIMAX//
     public Integer minimax(Long time, Board board, Move move, int depth, int alpha, int beta, Move originalMove, Board originalBoard) {
         //needed elements
-        Board.GameState gameState = (Board.GameState) board;
         List<Move> moves = board.getAvailableMoves().asList();
         long startTime = System.nanoTime();
         long endTime   = System.nanoTime();
@@ -430,22 +410,9 @@ public class Moriarty implements Ai {
     }
 
 
-    //a helper method that weights transportations for detectives
-    private Integer transportationCost(Integer source, Integer destination, ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
-        int ticketVal = 0;
-        //returning different ticket values by transportation respectively
-        for (ScotlandYard.Transport t : graph.edgeValueOrDefault(source, destination, ImmutableSet.of())) {
-            switch(t.requiredTicket()){
-                case TAXI -> ticketVal += 2;
-                case BUS -> ticketVal += 4;
-                case UNDERGROUND -> ticketVal += 8;
-            }
-        }
-        return ticketVal;
-    }
 
 
-    //
+    //a helper method that weights transportations for MrX
     private Integer transportationCost(Board board, List<ScotlandYard.Ticket> tickets) {
         List<LogEntry> mrXLog = board.getMrXTravelLog();
         int ticketVal = 0;
@@ -457,8 +424,7 @@ public class Moriarty implements Ai {
                 case UNDERGROUND -> ticketVal += 8;
                 case SECRET -> {
                     if (mrXLog.size() != 0){
-                        //if mrX's log size is larger than 0 and is after reveal
-                        if(board.getSetup().moves.get(mrXLog.size() - 1)) {
+                        if(board.getSetup().moves.get(mrXLog.size() - 1)) {   //if mrX's log size is larger than 0 and is after reveal
                             ticketVal += 200;}
                     }
                 }
