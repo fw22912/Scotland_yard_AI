@@ -29,8 +29,6 @@ public class Moriarty implements Ai {
         int depth = 3;
         List<Move> availableMoves = board.getAvailableMoves().asList();
         List<Move> optimalMoves = new ArrayList<>();
-//		List<Move> availableMoves = new ArrayList<>();
-        Move bestMove = null;
 
         //iterate through all the available moves and get a move with the highest minimax score
         for (Move move : availableMoves) {
@@ -64,8 +62,8 @@ public class Moriarty implements Ai {
         }
         else{
             for (Move optimalMove : optimalMoves) {
-                //new score by adding up transportation cost, number of adjacent nodes
-                // and subtracting the num of nearby detectives
+                /*new score by adding up transportation cost, number of adjacent nodes
+                  and subtracting the num of nearby detectives*/
                 int score2 = transportationCost(board, updateTicket(optimalMove))
                         + gameState.getSetup().graph.adjacentNodes(updateLocation(optimalMove)).size()
                         - (detectivesNearby(board, optimalMove) * 3);
@@ -80,15 +78,15 @@ public class Moriarty implements Ai {
                 }
             }
 
-            //new elements for checking if there are no adjacent detectives
-            //in the neighbouring nodes after MrX has moved
-            //run checkAdjacent which only returns the moves that are safe
+            /*new elements for checking if there are no adjacent detectives
+              in the neighbouring nodes after MrX has moved
+              run checkAdjacent which only returns the moves that are safe*/
             List<Move> noAdjacentMoves = checkAdjacent(board, highestMoves);
             List<Move> alternativeMoves = new ArrayList<>();
             List<Move> finalMoves = new ArrayList<>();
 
-            //if no such move, filter the moves
-            //if single and double both available, choose from only single moves
+            /*if no such move, filter the moves
+             if single and double both available, choose from only single moves*/
             if (noAdjacentMoves.isEmpty()) {
                 alternativeMoves.addAll(filterSingleDouble(board, highestMoves));
                 bestMove = alternativeMoves.get(0);
@@ -109,8 +107,8 @@ public class Moriarty implements Ai {
     }
 
 
-    //returns filtered Single or Double
-    //if single exists, return only single and both otherwise
+    /*returns filtered Single or Double
+     if single exists, return only single and both otherwise*/
     private List<Move> filterSingleDouble(Board board, List<Move> scoredMoves){
         int totalVal = valueListMoves(board, scoredMoves);
         if(totalVal != 0) return getOnlySingle(board, scoredMoves);  //if no double, return only single
@@ -118,8 +116,7 @@ public class Moriarty implements Ai {
     }
 
 
-    //filters and returns singleMove only
-    //returns the number of single moves
+    //filters and returns singleMove only returns the number of single moves
     private Integer valueListMoves(Board board, List<Move> scoredMoves){
         int totalVal = 0;
         for(Move move : scoredMoves){
@@ -223,8 +220,8 @@ public class Moriarty implements Ai {
 
 
 
-    //a helper method that returns a boolean value of
-    // whether there is only one detective left in the remaining
+    /*a helper method that returns a boolean value of
+      whether there is only one detective left in the remaining*/
     private boolean checkOnlyOneInRemaining(Board board) {
         //elements
         ArrayList<Move> moves = new ArrayList<>(board.getAvailableMoves().asList()); //get every available moves
@@ -309,8 +306,8 @@ public class Moriarty implements Ai {
     }
 
 
-    //minimax helping function that returns the score
-    //score == distance between current detectives' location to destination of MrX's move
+    /*minimax helping function that returns the score
+     score == distance between current detectives' location to destination of MrX's move*/
     private Integer evaluate(Board board, Move move, Board originalBoard) {
         //elements
         Board.GameState gameState = (Board.GameState) board;
@@ -336,8 +333,6 @@ public class Moriarty implements Ai {
     //a method that returns the score based on the type of the move
     private Integer filterDouble(Board board, Move move) {
         return move.accept(new Move.Visitor<>() {
-            final Board.GameState gameState = (Board.GameState) board;
-
             @Override
             public Integer visit(Move.SingleMove move) {
                 return 1;
@@ -353,8 +348,8 @@ public class Moriarty implements Ai {
 
 
 
-    //a function that checks whether this move is safe or not
-    //it returns a list of the nodes that are not adjacent to detectives' locations
+    /*a function that checks whether this move is safe or not
+      it returns a list of the nodes that are not adjacent to detectives' locations*/
     private List<Move> checkAdjacent(Board board, List<Move> bestMoves) {
         List<Move> possible = new ArrayList<>();
         for (Move move : bestMoves) {
@@ -370,8 +365,8 @@ public class Moriarty implements Ai {
 
 
 
-    //HELPER METHODS STARTS HERE//
-    //a helper method that returns all adjacent nodes from detectives' current location
+    /*HELPER METHODS STARTS HERE
+      a helper method that returns all adjacent nodes from detectives' current location*/
     private Set<Integer> detectiveAdjacent(Move move, Board board) {
         Board newBoard = updatedBoard(board, move);
         Set<Integer> availableLocation = new HashSet<>();
