@@ -34,7 +34,7 @@ public class Moriarty implements Ai {
         for (Move move : availableMoves) {
             Board updated = updatedBoard(board, move);
             //do minimax with updatedBoard after designated move
-            int eval = minimax(timeoutPair.left(), updated, move, depth - 1, alpha, beta, move, board);
+            int eval = minimax(timeoutPair.left(), updated, move, depth - 1, alpha, beta);
             //if new best high value, clear the list and add the move
             if (maxEval < eval) {
                 maxEval = eval;
@@ -242,26 +242,29 @@ public class Moriarty implements Ai {
 
     //HELPER METHODS END HERE//
 
-
     //MINIMAX//
-    public Integer minimax(Long time, Board board, Move move, int depth, int alpha, int beta, Move originalMove, Board originalBoard) {
-        //needed elements
+    public Integer minimax(Long timeout, Board board, Move move, int depth, int alpha, int beta) {
+        long startTime = System.currentTimeMillis();
         List<Move> moves = board.getAvailableMoves().asList();
-        long startTime = System.nanoTime();
-        long endTime   = System.nanoTime();
-        long totalTime = endTime - startTime;
+
+        long evaluateStartTime = System.nanoTime();
+        int evaluation = evaluate(board, move);
+        long evaluateEndTime = System.currentTimeMillis();
+        long evaluateExecutionTime = evaluateEndTime - evaluateStartTime;
 
         //evaluate if the game has ended
+        //TODO
         if (depth == 0
                 || !board.getWinner().isEmpty()
-                || (totalTime > time)) {     //or if it has not been done in a designated time
-            return evaluate(board, originalMove, originalBoard);
+                || (System.currentTimeMillis() - startTime > timeout - evaluateExecutionTime)) {     //or if it has not been done in a designated time
+            return evaluate(board, move);
         }
         if (moves.get(0).commencedBy() == Piece.MrX.MRX) {   //when it is MrX's turn
             int maxEval = Integer.MIN_VALUE;
             for (Move child : moves) {   //iterate through moves
+                System.out.println("범인: " + child);
                 Board updated = updatedBoard(board, child);
-                int eval = minimax(time, updated, child, depth - 1, alpha, beta, originalMove, originalBoard);  //do minimax for the next detectives' move (subtracting depth by 1)
+                int eval = minimax(timeout, updated, child, depth - 1, alpha, beta);  //do minimax for the next detectives' move (subtracting depth by 1)
                 maxEval = Math.max(maxEval, eval);
                 alpha = Math.max(alpha, maxEval);
                 if (beta <= alpha) {   //using alpha-beta pruning
@@ -276,9 +279,10 @@ public class Moriarty implements Ai {
             if (detectiveRemaining) {    //if last detective
                 for (Move child : moves) {
                     if (moves.get(0).commencedBy() == child.commencedBy()){
+                        System.out.println("하나: " + child);
                         Board updated = updatedBoard(board, child);
                         //pass down the minimax to MrX by subtracting depth by 1
-                        int eval = minimax(time, updated, move, depth - 1, alpha, beta, originalMove, originalBoard);
+                        int eval = minimax(timeout, updated, child, depth - 1, alpha, beta);
                         minEval = Math.min(minEval, eval);
                         beta = Math.min(minEval, beta);
                         if (beta <= alpha) {
@@ -290,9 +294,10 @@ public class Moriarty implements Ai {
             else { //if not the last detective
                 for (Move child : moves) {
                     if (moves.get(0).commencedBy() == child.commencedBy()) { //choosing one detective piece and move
+                        System.out.println("여럿: " + child);
                         Board updated = updatedBoard(board, child);
                         //minimax, but not decreasing the depth until the board is updated by all detectives' move
-                        int eval = minimax(time , updated, move, depth, alpha, beta, originalMove, originalBoard);
+                        int eval = minimax(timeout , updated, child, depth, alpha, beta);
                         minEval = Math.min(minEval, eval);
                         beta = Math.min(minEval, beta);
                         if (beta <= alpha) {
@@ -308,7 +313,7 @@ public class Moriarty implements Ai {
 
     /*minimax helping function that returns the score
      score == distance between current detectives' location to destination of MrX's move*/
-    private Integer evaluate(Board board, Move move, Board originalBoard) {
+    private Integer evaluate(Board board, Move move) {
         //elements
         Board.GameState gameState = (Board.GameState) board;
         int score;
@@ -322,7 +327,7 @@ public class Moriarty implements Ai {
             }
         }
         else {   //otherwise calculate the distance with Dijkstra
-            score = Dijkstra.calculateDistance(getDetectivesLocation(originalBoard), updateLocation(move), gameState.getSetup().graph);
+            score = Dijkstra.calculateDistance(getDetectivesLocation(board), updateLocation(move), gameState.getSetup().graph);
         }
         return score;
     }

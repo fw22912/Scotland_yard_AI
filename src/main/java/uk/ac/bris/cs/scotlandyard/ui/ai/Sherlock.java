@@ -1,8 +1,6 @@
 package uk.ac.bris.cs.scotlandyard.ui.ai;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.graph.EndpointPair;
-import com.google.common.graph.ImmutableValueGraph;
 import io.atlassian.fugue.Pair;
 import uk.ac.bris.cs.scotlandyard.model.*;
 
@@ -21,84 +19,72 @@ public class Sherlock implements Ai {
     @Nonnull
     @Override
     public Move pickMove(@Nonnull Board board, Pair<Long, TimeUnit> timeoutPair) {
-        Board.GameState gameState = (Board.GameState) board;
-        int maxEval = Integer.MIN_VALUE;
+        int minEval = Integer.MAX_VALUE;
         int alpha = Integer.MIN_VALUE;
         int beta = Integer.MAX_VALUE;
         int depth = 3;
         List<Move> availableMoves = board.getAvailableMoves().asList();
         List<Move> optimalMoves = new ArrayList<>();
-        Move bestMove = null;
 
         //iterate through all the available moves and get a move with the highest minimax score
         for (Move move : availableMoves) {
             Board updated = updatedBoard(board, move);
             //do minimax with updatedBoard after designated move
-            int eval = minimax(updated, move, depth - 1, alpha, beta, board, move);
-            if (maxEval < eval) {
-                maxEval = eval;
+            getMrXLocation(board);
+            int eval = minimax(updated, move, depth - 1, alpha, beta, board, move, timeoutPair.left());
+            if (minEval > eval) {
+                minEval = eval;
                 optimalMoves.clear();
                 optimalMoves.add(move);
-            } else if (maxEval == eval) {
+            } else if (minEval == eval) {
                 optimalMoves.add(move);
             }
         }
-        System.out.println("OPTIMALMOVES: " + optimalMoves);
-        //optimal Moves에서는 이미 dijkstra와 score2 << evaluate 된 move들만 들어있음
 
         return returnBestMove(board, optimalMoves, board);
     }
 
 
-    //HELPER METHODS STARTS HERE//
-    //a helper method that returns all adjacent nodes from detectives' current location
-    private Set<Integer> detectiveAdjacent(Move move, Board board) {
-        Board newBoard = updatedBoard(board, move);
-        Set<Integer> availableLocation = new HashSet<>();
-        //places where detectives can go
-        for (Move move2 : newBoard.getAvailableMoves()) {
-            availableLocation.add(updateLocation(move2));
+
+    private Optional<Integer> getMrXLocation(Board board){
+        List<LogEntry> log = board.getMrXTravelLog();
+        LogEntry currLog = log.get(log.size() - 1);
+        int mrXLocation = 0;
+        if (log.contains(Piece.MrX.MRX)) {
+            if (currLog.location().isPresent()) throw new NoSuchElementException();
+            else mrXLocation = currLog.location().get();
         }
-        return availableLocation;
+        return Optional.of(mrXLocation);
     }
 
 
-    //a function that checks whether this move is safe or not
-    //it returns a list of the nodes that are not adjacent to detectives' locations
-    private List<Move> checkAdjacent(Board board, List<Move> bestMoves) {
-        List<Move> possible = new ArrayList<>();
-        for (Move move : bestMoves) {
-            Set<Integer> occupation = detectiveAdjacent(move, board);
-            //if there are no detectives around add the move to the list
-            if (!occupation.add(updateLocation(move))) {
-                possible.add(move);
+    private boolean checkMrX(Board board){
+        List<Move> allMoves = board.getAvailableMoves().asList();
+        boolean check = false;
+        for(Move move : allMoves){
+            if(move.commencedBy() != Piece.MrX.MRX){
+                check = true;
+                break;
             }
         }
-        return possible;
+        return check;
     }
-
 
     private Move returnBestMove(Board board, List<Move> optimalMoves, Board originalBoard){
 //		Random ran = new Random();
-        Move bestMove;
-        List<Move> highestMoves = new ArrayList<>();
-        List<Move> noAdjacentMoves = checkAdjacent(board, optimalMoves);
-        List<Move> alternativeMoves = new ArrayList<>();
         List<Move> finalMoves = new ArrayList<>();
-        if (noAdjacentMoves.isEmpty()) {
-            bestMove = board.getAvailableMoves().asList().get(0);
-        }
-        else {
-            //NEW LOOP
-            if (noAdjacentMoves.size() == 1) {bestMove = noAdjacentMoves.get(0);}
-            else {
-                bestMove = noAdjacentMoves.get(0);
-                System.out.println("FINALMOVES: " + finalMoves);
+        int maxScore = Integer.MIN_VALUE;
+        for (Move move : optimalMoves) {
+            int score2 = scoreMove(board, move, getMrXLocation(board).get(), move.commencedBy());
+            if (score2 > maxScore) {
+                finalMoves.clear();
+                finalMoves.add(move);
+                maxScore = score2;
+            } else if (score2 == maxScore) {
+                finalMoves.add(move);
             }
         }
-
-        System.out.println("BESTMOVE: " + bestMove);
-        return bestMove;
+        return finalMoves.get(0);
     }
 
 
@@ -125,8 +111,6 @@ public class Sherlock implements Ai {
 
     //returns the amount of current tickets
     private Integer ticketsLeft(Board board, Piece piece, ScotlandYard.Ticket currTicket){
-        List<ScotlandYard.Ticket> tickets = new ArrayList<>();
-        int i = 0;
         Board.TicketBoard ticketBoard = board.getPlayerTickets(piece).get();
         return ticketBoard.getCount(currTicket);
     }
@@ -140,9 +124,9 @@ public class Sherlock implements Ai {
         //returning different ticket values by transportation respectively
         for (ScotlandYard.Transport t : gameState.getSetup().graph.edgeValueOrDefault(source, destination, ImmutableSet.of())) {
             switch(t.requiredTicket()){
-                case TAXI -> ticketVal += 20 / ticketsLeft(board, piece, ScotlandYard.Ticket.TAXI);
-                case BUS -> ticketVal += 40 / ticketsLeft(board, piece, ScotlandYard.Ticket.BUS);
-                case UNDERGROUND -> ticketVal += 80 / ticketsLeft(board, piece, ScotlandYard.Ticket.UNDERGROUND);
+                case TAXI -> ticketVal += 20 * ticketsLeft(board, piece, ScotlandYard.Ticket.TAXI);
+                case BUS -> ticketVal += 40 * ticketsLeft(board, piece, ScotlandYard.Ticket.BUS);
+                case UNDERGROUND -> ticketVal += 80 * ticketsLeft(board, piece, ScotlandYard.Ticket.UNDERGROUND);
             }
         }
         return ticketVal;
@@ -163,72 +147,57 @@ public class Sherlock implements Ai {
     }
 
 
-    public static List<ScotlandYard.Ticket> updateTicket(Move move) {
-        return move.accept(new Move.Visitor<>() {
-            final List<ScotlandYard.Ticket> newTicket = new ArrayList<>();
-            @Override
-            public List<ScotlandYard.Ticket> visit(Move.SingleMove move) {
-                newTicket.add(move.ticket);
-                return newTicket;
-            }
-            @Override
-            public List<ScotlandYard.Ticket> visit(Move.DoubleMove move) {
-                newTicket.add(move.ticket1);
-                newTicket.add(move.ticket2);
-                return newTicket;
-            }
-        });
-    }
-
-
     private Integer scoreMove(Board board, Move move, Integer mrXLocation, Piece piece) {
-        Board.GameState gameState = (Board.GameState) board;
-        int transportCost = transportationCost(move.source(), mrXLocation, board, piece);
-        int adjacent = gameState.getSetup().graph.adjacentNodes(updateLocation(move)).size();
-        int score = transportCost + adjacent;
-        return score;
+        return transportationCost(move.source(), mrXLocation, board, piece);
     }
 
-
+    private static List<Integer> getDetectivesLocation(Board board) {
+        List<Integer> locations = new ArrayList<>();
+        for (Piece piece : board.getPlayers()) {
+            if (!piece.isMrX()) {
+                locations.add(board.getDetectiveLocation((Piece.Detective) piece).get());
+            }
+        }
+        return locations;
+    }
 
     private Integer evaluate(Board board, Move move, Board originalBoard) {
-        int score = 0;
+        //elements
         Board.GameState gameState = (Board.GameState) board;
+        int score;
 
-        if (!board.getWinner().isEmpty()) {
-            if (board.getWinner().contains(Piece.MrX.MRX)) {
-                score = -1000;
-            }
-            else {
+        if (!board.getWinner().isEmpty()) {    //if winner determined
+            if (!board.getWinner().contains(Piece.MrX.MRX)) {    //and if MrX, return 1000
                 score = 1000;
             }
+            else {   //detectives, return -1000
+                score = -1000;
+            }
         }
-        else {
-            score = scoreMove(originalBoard, move, move.source(), board.getAvailableMoves().asList().get(0).commencedBy());
+        else {   //otherwise calculate the distance with Dijkstra
+            score = Dijkstra.calculateDistance(getDetectivesLocation(originalBoard), getMrXLocation(board).get(), gameState.getSetup().graph);
         }
         return score;
     }
 
 
-    public Integer minimax(Board board, Move move, int depth, int alpha, int beta, Board originalBoard, Move originalMove) {
-        Board.GameState gameState = (Board.GameState) board;
+    public Integer minimax(Board board, Move move, int depth, int alpha, int beta, Board originalBoard, Move originalMove, Long time) {
         List<Move> moves = board.getAvailableMoves().asList();
-        boolean detectiveRemaining = checkOnlyOneInRemaining(board);
-//		System.out.println(move);
-        if (depth == 0 || !board.getWinner().isEmpty()) {
-            System.out.println("-----------------------------NEW MOVE------------------------");
+        long startTime = System.nanoTime();
+
+        //evaluate if the game has ended
+        if (depth == 0
+                || !board.getWinner().isEmpty()
+                || (startTime - System.nanoTime() > (time - 50))) {     //or if it has not been done in a designated time
             return evaluate(board, originalMove, originalBoard);
         }
         if (moves.get(0).commencedBy() == Piece.MrX.MRX) {
-            int minEval = Integer.MIN_VALUE;
-            System.out.println("MrX: " + moves);
+            int minEval = Integer.MAX_VALUE;
             for (Move child : moves) {
-//				System.out.println("MRX TURN CHILD: " + child);
                 Board updated = updatedBoard(board, child);
-//				System.out.println("체크미스터엑스 T 보드업데이트됨");
-                int eval = minimax(updated, child, depth - 1, alpha, beta, originalBoard, originalMove);
+                int eval = minimax(updated, child, depth - 1, alpha, beta, originalBoard, originalMove, time);
                 minEval = Math.min(minEval, eval);
-                alpha = Math.min(alpha, minEval);
+                beta = Math.min(beta, minEval);
                 if (beta <= alpha) {
                     break;
                 }
@@ -236,18 +205,15 @@ public class Sherlock implements Ai {
             return minEval;
         }
         else {
-//			System.out.println("numOfDetectives: " + numOfDetectives);
-            int maxEval = Integer.MAX_VALUE;
-            System.out.println("Detectives: " + moves);
+            boolean detectiveRemaining = checkOnlyOneInRemaining(board);  //check the remaining of the detectives
+            int maxEval = Integer.MIN_VALUE;
             if (detectiveRemaining) {
                 for (Move child : moves) {
-//					System.out.println("DETECTIVES TURN CHILD BUT ONLY ONE REMAINING: " + child);
                     if (moves.get(0).commencedBy() == child.commencedBy()){
                         Board updated = updatedBoard(board, child);
-//				System.out.println("체크미스터엑스 F 보드업데이트됨");
-                        int eval = minimax(updated, move, depth - 1, alpha, beta, originalBoard, originalMove);
+                        int eval = minimax(updated, move, depth - 1, alpha, beta, originalBoard, originalMove, time);
                         maxEval = Math.max(maxEval, eval);
-                        beta = Math.max(maxEval, beta);
+                        alpha = Math.max(maxEval, alpha);
                         if (beta <= alpha) {
                             break;
                         }
@@ -256,13 +222,11 @@ public class Sherlock implements Ai {
             }
             else {
                 for (Move child : moves) {
-//					System.out.println("DETECTIVES TURN CHILD ELSE: " + child);
                     if (moves.get(0).commencedBy() == child.commencedBy()) {
                         Board updated = updatedBoard(board, child);
-//				System.out.println("체크미스터엑스 F 보드업데이트됨");
-                        int eval = minimax(updated, move, depth, alpha, beta, originalBoard, originalMove);
+                        int eval = minimax(updated, move, depth, alpha, beta, originalBoard, originalMove, time);
                         maxEval = Math.max(maxEval, eval);
-                        beta = Math.max(maxEval, beta);
+                        alpha = Math.max(maxEval, alpha);
                         if (beta <= alpha) {
                             break;
                         }

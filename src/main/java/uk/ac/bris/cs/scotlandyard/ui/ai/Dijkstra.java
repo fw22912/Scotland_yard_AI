@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.ImmutableValueGraph;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
-import uk.ac.bris.cs.scotlandyard.ui.ai.*;
 
 import java.util.*;
 
@@ -13,7 +12,7 @@ public class Dijkstra {
         int size;
         List<List<Integer>> shortPath = new ArrayList<>();
         List<List<Integer>> allPath = new ArrayList<>();
-        List<List<Integer>> longPath = new ArrayList<>();
+//        List<List<Integer>> longPath = new ArrayList<>();
         //calculate the distance from each detective to mrX's expected location
         for (Integer detectiveLocation : detectivesLocation) {
             Map<Integer, Integer> distance = new HashMap<>();
