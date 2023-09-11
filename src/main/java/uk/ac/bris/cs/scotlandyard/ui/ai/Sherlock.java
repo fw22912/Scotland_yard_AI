@@ -26,20 +26,28 @@ public class Sherlock implements Ai {
         List<Move> availableMoves = board.getAvailableMoves().asList();
         List<Move> optimalMoves = new ArrayList<>();
 
-        //iterate through all the available moves and get a move with the highest minimax score
-        for (Move move : availableMoves) {
-            Board updated = updatedBoard(board, move);
-            //do minimax with updatedBoard after designated move
-            getMrXLocation(board);
-            int eval = minimax(updated, move, depth - 1, alpha, beta, board, move, timeoutPair.left());
-            if (minEval > eval) {
-                minEval = eval;
-                optimalMoves.clear();
-                optimalMoves.add(move);
-            } else if (minEval == eval) {
-                optimalMoves.add(move);
+        long startTime = System.currentTimeMillis();
+        long expectedTime = (long) (startTime);
+
+        while(expectedTime - startTime > 0){
+            long currentTime = System.currentTimeMillis();
+            startTime = currentTime;
+            //iterate through all the available moves and get a move with the highest minimax score
+            for (Move move : availableMoves) {
+                Board updated = updatedBoard(board, move);
+                //do minimax with updatedBoard after designated move
+                getMrXLocation(board);
+                int eval = minimax(updated, move, depth - 1, alpha, beta, board, move, timeoutPair.left());
+                if (minEval > eval) {
+                    minEval = eval;
+                    optimalMoves.clear();
+                    optimalMoves.add(move);
+                } else if (minEval == eval) {
+                    optimalMoves.add(move);
+                }
             }
         }
+
 
         return returnBestMove(board, optimalMoves, board);
     }

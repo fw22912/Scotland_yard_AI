@@ -1,5 +1,6 @@
 package uk.ac.bris.cs.scotlandyard.ui.ai;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -30,20 +31,32 @@ public class Moriarty implements Ai {
         List<Move> availableMoves = board.getAvailableMoves().asList();
         List<Move> optimalMoves = new ArrayList<>();
 
+        long startTime = Instant.now().getEpochSecond();
+        long additionalTime = 10;
+        long expectedTime = startTime + additionalTime;
+
         //iterate through all the available moves and get a move with the highest minimax score
         for (Move move : availableMoves) {
-            Board updated = updatedBoard(board, move);
-            //do minimax with updatedBoard after designated move
-            int eval = minimax(timeoutPair.left(), updated, move, depth - 1, alpha, beta);
-            //if new best high value, clear the list and add the move
-            if (maxEval < eval) {
-                maxEval = eval;
-                optimalMoves.clear();
-                optimalMoves.add(move);
-            } else if (maxEval == eval) {  //if same, add the move
-                optimalMoves.add(move);
+            long currTime = Instant.now().getEpochSecond();
+            startTime = currTime;
+            if(expectedTime - startTime > 0){
+                Board updated = updatedBoard(board, move);
+                //do minimax with updatedBoard after designated move
+                int eval = minimax(timeoutPair.left(), updated, move, depth - 1, alpha, beta);
+                //if new best high value, clear the list and add the move
+                if (maxEval < eval) {
+                    maxEval = eval;
+                    optimalMoves.clear();
+                    optimalMoves.add(move);
+                } else if (maxEval == eval) {  //if same, add the move
+                    optimalMoves.add(move);
+                }
             }
+            else break;
         }
+
+        System.out.println("Finish");
+
         return returnBestMove(board, optimalMoves);
     }
 
